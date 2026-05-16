@@ -1,0 +1,1 @@
+export 'plant_doctor_mobile.dart' if (dart.library.html) 'plant_doctor_web.dart';

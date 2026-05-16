@@ -1,0 +1,29 @@
+# Gradle
+android/.gradle/
+
+# Flutter ephemeral
+ios/Flutter/ephemeral/
+macos/Flutter/ephemeral/
+linux/flutter/ephemeral/
+windows/flutter/ephemeral/
+
+# Generated plugin files
+.flutter-plugins
+
+# VS Code
+.vscode/
+
+# Environment files
+.env
+.env.*
+
+# Mac/Linux temp
+Thumbs.db
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+
+# Kubernetes secrets
+secrets.yaml
