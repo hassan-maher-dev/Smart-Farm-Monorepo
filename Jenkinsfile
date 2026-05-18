@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         // Docker Hub Variables
-        DOCKERHUB_USER = "hassanmaher2001" // غيره باسمك على Docker Hub
+        DOCKERHUB_USER = "hassanmaher2001" // غيره باسمك على Docker Hub لو لزم الأمر
         AI_IMG = "farmnet-ai-service"
         IOT_IMG = "farmnet-iot-service"
         IMAGE_TAG = "${env.BUILD_ID}"
@@ -118,11 +118,11 @@ pipeline {
                         git config user.email "jenkins@devops.com"
                         git config user.name "Jenkins CI"
 
-                        # Update tags for both services in the deployment yamls
-                        sed -i "s|image: ${DOCKERHUB_USER}/${AI_IMG}:.*|image: ${DOCKERHUB_USER}/${AI_IMG}:${IMAGE_TAG}|g" k8s/ai-deployment.yaml
-                        sed -i "s|image: ${DOCKERHUB_USER}/${IOT_IMG}:.*|image: ${DOCKERHUB_USER}/${IOT_IMG}:${IMAGE_TAG}|g" k8s/iot-deployment.yaml
+                        # Update tags for both services in the flat directory structure
+                        sed -i "s|image: ${DOCKERHUB_USER}/${AI_IMG}:.*|image: ${DOCKERHUB_USER}/${AI_IMG}:${IMAGE_TAG}|g" deployment-ai.yaml
+                        sed -i "s|image: ${DOCKERHUB_USER}/${IOT_IMG}:.*|image: ${DOCKERHUB_USER}/${IOT_IMG}:${IMAGE_TAG}|g" deployment-iot.yaml
 
-                        git add k8s/ai-deployment.yaml k8s/iot-deployment.yaml
+                        git add deployment-ai.yaml deployment-iot.yaml
                         
                         # Only commit and push if there are changes
                         git diff --staged --quiet || (git commit -m "Auto-update images to build ${IMAGE_TAG}" && git push origin main)

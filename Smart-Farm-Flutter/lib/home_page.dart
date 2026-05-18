@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:async';
+import 'dart:convert';
+
+import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 
 import 'package:plant_monitor/constants.dart';
 import 'package:plant_monitor/widgets/common_widgets.dart';
 import 'package:plant_monitor/screens/app_screens.dart';
 import 'package:plant_monitor/screens/plant_doctor_screen.dart';
-import 'package:plant_monitor/main.dart'; 
+import 'package:plant_monitor/main.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -17,258 +19,560 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final SupabaseClient _supabase = Supabase.instance.client;
-  
-  String? _userId;
-  
+
+  // ================= User ID =================
+
+  // مؤقتًا ثابت لحد ما تعمل Authentication حقيقي
+  String? _userId =
+      "17b7dec9-b349-4a51-bf03-edb57fbf7793";
+
+  // ================= App State =================
+
   Map<String, dynamic> _currentData = {};
+
   bool _isLoading = true;
+
   int _currentIndex = 0;
+
   DateTime _currentTime = DateTime.now();
+
   Timer? _clockTimer;
-  
-  // حالة الأجهزة (Pump & Lights)
+
+  Timer? _pollingTimer;
+
+  // ================= Devices State =================
+
   Map<String, dynamic> _devicesState = {
-    'water_pump': {'is_on': false, 'mode': 'auto'},
-    'grow_lights': {'is_on': false, 'mode': 'auto'}
+    'water_pump': {
+      'is_on': false,
+      'mode': 'auto'
+    },
+    'grow_lights': {
+      'is_on': false,
+      'mode': 'auto'
+    }
   };
-  
+
+  // ================= Historical Data =================
+
   List<Map<String, dynamic>> _historicalData = [];
+
+  // ===================================================
+  // ================= INIT STATE ======================
+  // ===================================================
 
   @override
   void initState() {
+
     super.initState();
-    _userId = _supabase.auth.currentUser?.id; 
-    
+
     _startClockTimer();
-    if (_userId != null) {
-      _initializeApp();
-    } else {
-      print("Error: No user logged in!");
-    }
+
+    _initializeApp();
   }
+
+  // ===================================================
+  // ================= DISPOSE =========================
+  // ===================================================
 
   @override
   void dispose() {
+
     _clockTimer?.cancel();
+
+    _pollingTimer?.cancel();
+
     super.dispose();
   }
 
+  // ===================================================
+  // ================= CLOCK TIMER =====================
+  // ===================================================
+
   void _startClockTimer() {
-    _clockTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (mounted) setState(() => _currentTime = DateTime.now());
-    });
+
+    _clockTimer = Timer.periodic(
+      const Duration(seconds: 1),
+      (timer) {
+
+        if (mounted) {
+
+          setState(() {
+            _currentTime = DateTime.now();
+          });
+        }
+      },
+    );
   }
+
+  // ===================================================
+  // ================= INITIALIZE ======================
+  // ===================================================
 
   Future<void> _initializeApp() async {
-    try {
-      await _loadLatestData();
-      await Future.wait([_loadHistoricalData(), _loadDevicesState()]);
-      _setupRealtimeSubscription();
-    } catch (e) {
-      print('Error initializing: $e');
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
 
-  // جلب آخر قراءة فورية
-  Future<void> _loadLatestData() async {
     try {
-      final response = await _supabase.from('plant_data')
-          .select()
-          .eq('user_id', _userId!)
-          .order('timestamp', ascending: false)
-          .limit(1);
-          
-      if (response.isNotEmpty && mounted) {
+
+      await _loadLatestData();
+
+      await Future.wait([
+        _loadHistoricalData(),
+        _loadDevicesState(),
+      ]);
+
+      _startPolling();
+
+    } catch (e) {
+
+      print("Initialization Error: $e");
+
+      if (mounted) {
+
         setState(() {
-          _currentData = Map<String, dynamic>.from(response[0]);
           _isLoading = false;
         });
-        _updateHistoricalList(_currentData);
-      } else {
-        if (mounted) setState(() => _isLoading = false);
       }
-    } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  // ✅ جلب بيانات "اليوم فقط" بناءً على التاريخ (Logic المهندسين)
-  Future<void> _loadHistoricalData() async {
+  // ===================================================
+  // ================= POLLING =========================
+  // ===================================================
+
+  void _startPolling() {
+
+    _pollingTimer = Timer.periodic(
+      const Duration(seconds: 3),
+      (_) async {
+
+        await _loadLatestData();
+
+        await _loadDevicesState();
+      },
+    );
+  }
+
+  // ===================================================
+  // ================= LOAD LATEST DATA ================
+  // ===================================================
+
+  Future<void> _loadLatestData() async {
+
     try {
-      final now = DateTime.now();
-      // بداية اليوم الحالي (12:00 AM) بصيغة ISO المتوافقة مع Supabase
-      final todayStart = DateTime(now.year, now.month, now.day).toUtc().toIso8601String();
 
-      final response = await _supabase.from('plant_data')
-          .select()
-          .eq('user_id', _userId!)
-          .gte('timestamp', todayStart) // هات القراءات الأكبر من أو تساوي بداية اليوم
-          .order('timestamp', ascending: false);
-          
-      if (response.isNotEmpty && mounted) {
-        setState(() {
-          // نعكس القائمة لعرضها من الأقدم للأحدث في الرسم البياني
-          _historicalData = List<Map<String, dynamic>>.from(response.reversed);
-        });
-        print("✅ Loaded ${response.length} readings for today.");
+      final response = await http.get(
+        Uri.parse(
+          '${AppConfig.serverBaseUrl}/api/latest-data/$_userId',
+        ),
+      );
+
+      if (response.statusCode == 200) {
+
+        final data = jsonDecode(response.body);
+
+        if (mounted) {
+
+          setState(() {
+
+            _currentData =
+                Map<String, dynamic>.from(data);
+
+            _isLoading = false;
+          });
+
+          _updateHistoricalList(_currentData);
+        }
+
+      } else {
+
+        if (mounted) {
+
+          setState(() {
+            _isLoading = false;
+          });
+        }
       }
-    } catch (e) { 
-      print('History Error: $e'); 
+
+    } catch (e) {
+
+      print("Latest Data Error: $e");
+
+      if (mounted) {
+
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
+
+  // ===================================================
+  // ================= LOAD HISTORY ====================
+  // ===================================================
+
+  Future<void> _loadHistoricalData() async {
+
+    try {
+
+      final response = await http.get(
+        Uri.parse(
+          '${AppConfig.serverBaseUrl}/api/history/$_userId',
+        ),
+      );
+
+      if (response.statusCode == 200) {
+
+        final data = jsonDecode(response.body);
+
+        if (mounted) {
+
+          setState(() {
+
+            _historicalData =
+                List<Map<String, dynamic>>.from(data);
+          });
+        }
+      }
+
+    } catch (e) {
+
+      print("History Error: $e");
+    }
+  }
+
+  // ===================================================
+  // ================= LOAD DEVICES ====================
+  // ===================================================
 
   Future<void> _loadDevicesState() async {
+
     try {
-      final response = await _supabase.from('devices')
-          .select()
-          .eq('user_id', _userId!);
-          
-      if (response.isNotEmpty && mounted) {
+
+      final response = await http.get(
+        Uri.parse(
+          '${AppConfig.serverBaseUrl}/api/devices/$_userId',
+        ),
+      );
+
+      if (response.statusCode == 200) {
+
+        final data = jsonDecode(response.body);
+
         Map<String, dynamic> newState = {};
-        for (var item in response) {
+
+        for (var item in data) {
+
           newState[item['id']] = item;
         }
-        setState(() => _devicesState = newState);
-      }
-    } catch (e) { print('Devices Error: $e'); }
-  }
 
-  // التحكم اليدوي
-  Future<void> _controlDevice(String deviceId, bool newState, {int duration = 0}) async {
-    setState(() {
-      if (_devicesState[deviceId] != null) {
-        _devicesState[deviceId]['is_on'] = newState;
-        _devicesState[deviceId]['mode'] = 'manual'; 
-      }
-    });
+        if (mounted) {
 
-    try {
-      await _supabase.from('devices').update({
-        'is_on': newState,
-        'mode': 'manual', 
-      })
-      .eq('id', deviceId)
-      .eq('user_id', _userId!);
+          setState(() {
+            _devicesState = newState;
+          });
+        }
+      }
+
     } catch (e) {
-      _loadDevicesState(); 
+
+      print("Devices Error: $e");
     }
   }
 
-  // الرجوع للوضع التلقائي
+  // ===================================================
+  // ================= CONTROL DEVICE ==================
+  // ===================================================
+
+  Future<void> _controlDevice(
+    String deviceId,
+    bool newState,
+    {
+      int duration = 0,
+    }
+  ) async {
+
+    try {
+
+      final response = await http.post(
+        Uri.parse(
+          '${AppConfig.serverBaseUrl}/api/control',
+        ),
+
+        headers: {
+          'Content-Type': 'application/json',
+        },
+
+        body: jsonEncode({
+          'user_id': _userId,
+          'device_id': deviceId,
+          'is_on': newState,
+          'mode': 'manual',
+        }),
+      );
+
+      if (response.statusCode == 200) {
+
+        await _loadDevicesState();
+
+      } else {
+
+        print("Control Error");
+      }
+
+    } catch (e) {
+
+      print("Control Device Error: $e");
+    }
+  }
+
+  // ===================================================
+  // ================= AUTO MODE =======================
+  // ===================================================
+
   Future<void> _setAutoMode(String deviceId) async {
-    setState(() {
-      if (_devicesState[deviceId] != null) {
-        _devicesState[deviceId]['mode'] = 'auto'; 
-      }
-    });
 
     try {
-      await _supabase.from('devices').update({'mode': 'auto'})
-      .eq('id', deviceId)
-      .eq('user_id', _userId!);
+
+      final response = await http.post(
+        Uri.parse(
+          '${AppConfig.serverBaseUrl}/api/control',
+        ),
+
+        headers: {
+          'Content-Type': 'application/json',
+        },
+
+        body: jsonEncode({
+          'user_id': _userId,
+          'device_id': deviceId,
+          'mode': 'auto',
+        }),
+      );
+
+      if (response.statusCode == 200) {
+
+        await _loadDevicesState();
+      }
+
     } catch (e) {
-      _loadDevicesState(); 
+
+      print("Auto Mode Error: $e");
     }
   }
 
-  // تحديث القائمة المحلية عند وصول بيانات جديدة
-  void _updateHistoricalList(Map<String, dynamic> newData) {
+  // ===================================================
+  // ================= UPDATE HISTORY ==================
+  // ===================================================
+
+  void _updateHistoricalList(
+    Map<String, dynamic> newData
+  ) {
+
     if (!mounted) return;
+
     setState(() {
+
       _historicalData.add(newData);
-      // الاحتفاظ بحد أقصى 2000 نقطة في الذاكرة لضمان سلاسة التطبيق
-      if (_historicalData.length > 2000) _historicalData.removeAt(0);
+
+      if (_historicalData.length > 2000) {
+
+        _historicalData.removeAt(0);
+      }
     });
   }
 
-  void _setupRealtimeSubscription() {
-    _supabase.channel('public:plant_data_$_userId').onPostgresChanges(
-      event: PostgresChangeEvent.insert, 
-      schema: 'public', 
-      table: 'plant_data',
-      filter: PostgresChangeFilter(type: PostgresChangeFilterType.eq, column: 'user_id', value: _userId!),
-      callback: (payload) {
-        final newData = Map<String, dynamic>.from(payload.newRecord!);
-        if (mounted) {
-          setState(() {
-            _currentData = newData;
-            _updateHistoricalList(newData);
-          });
-        }
-      },
-    ).subscribe();
+  // ===================================================
+  // ================= SENSOR VALUE ====================
+  // ===================================================
 
-    _supabase.channel('public:devices_$_userId').onPostgresChanges(
-      event: PostgresChangeEvent.update, 
-      schema: 'public', 
-      table: 'devices',
-      filter: PostgresChangeFilter(type: PostgresChangeFilterType.eq, column: 'user_id', value: _userId!),
-      callback: (payload) {
-        final updatedDevice = payload.newRecord!;
-        if (mounted) {
-          setState(() {
-            _devicesState[updatedDevice['id']] = updatedDevice;
-          });
-        }
-      },
-    ).subscribe();
-  }
+  String _getSensorValue(
+    String valueKey,
+    String unit,
+  ) {
 
-  String _getSensorValue(String valueKey, String unit) {
-    if (_currentData.isEmpty) return '0$unit';
+    if (_currentData.isEmpty) {
+
+      return '0$unit';
+    }
+
     final value = _currentData[valueKey];
-    if (value == null) return '0$unit';
-    double numVal = (value is num) ? value.toDouble() : double.tryParse(value.toString()) ?? 0.0;
-    
-    int decimals = (valueKey == 'soil_ph' || valueKey == 'uv_index') ? 1 : (valueKey == 'soil_ec' ? 2 : 0);
+
+    if (value == null) {
+
+      return '0$unit';
+    }
+
+    double numVal =
+        (value is num)
+        ? value.toDouble()
+        : double.tryParse(value.toString()) ?? 0.0;
+
+    int decimals =
+        (valueKey == 'soil_ph' || valueKey == 'uv_index')
+        ? 1
+        : (valueKey == 'soil_ec' ? 2 : 0);
+
     return '${numVal.toStringAsFixed(decimals)}$unit';
   }
 
+  // ===================================================
+  // ================= PAGE TITLE ======================
+  // ===================================================
+
   String _getPageTitle(bool isArabic) {
-    List<String> titles = isArabic 
-      ? ['الرئيسية', 'الحساسات', 'التحكم', 'طبيب النبات', 'عن التطبيق', 'التنبيهات', 'الإعدادات']
-      : ['Dashboard', 'Sensors', 'Control', 'Plant Doctor', 'About Us', 'Notifications', 'Settings'];
-    return _currentIndex < titles.length ? titles[_currentIndex] : 'FarmNet';
+
+    List<String> titles = isArabic
+      ? [
+          'الرئيسية',
+          'الحساسات',
+          'التحكم',
+          'طبيب النبات',
+          'عن التطبيق',
+          'التنبيهات',
+          'الإعدادات'
+        ]
+      : [
+          'Dashboard',
+          'Sensors',
+          'Control',
+          'Plant Doctor',
+          'About Us',
+          'Notifications',
+          'Settings'
+        ];
+
+    return _currentIndex < titles.length
+      ? titles[_currentIndex]
+      : 'FarmNet';
   }
 
+  // ===================================================
+  // ================= BUILD SCREEN ====================
+  // ===================================================
+
   Widget _buildCurrentScreen() {
+
     switch (_currentIndex) {
+
       case 0:
-        return DashboardScreen(currentData: _currentData, currentTime: _currentTime, getSensorValue: _getSensorValue);
+
+        return DashboardScreen(
+          currentData: _currentData,
+          currentTime: _currentTime,
+          getSensorValue: _getSensorValue,
+        );
+
       case 1:
-        return SensorsScreen(currentData: _currentData, historicalData: _historicalData, getSensorValue: _getSensorValue);
+
+        return SensorsScreen(
+          currentData: _currentData,
+          historicalData: _historicalData,
+          getSensorValue: _getSensorValue,
+        );
+
       case 2:
-        return ControlScreen(devicesState: _devicesState, onControlDevice: _controlDevice, onSetAutoMode: _setAutoMode);
+
+        return ControlScreen(
+          devicesState: _devicesState,
+          onControlDevice: _controlDevice,
+          onSetAutoMode: _setAutoMode,
+        );
+
       case 3:
+
         return const PlantDoctorScreen();
+
       case 4:
+
         return AboutScreen();
+
       case 5:
-        return NotificationsScreen(historicalData: _historicalData); 
+
+        return NotificationsScreen(
+          historicalData: _historicalData,
+        );
+
       case 6:
+
         return const SettingsScreen();
+
       default:
+
         return const SettingsScreen();
     }
   }
 
+  // ===================================================
+  // ================= BUILD ===========================
+  // ===================================================
+
   @override
   Widget build(BuildContext context) {
+
     final isArabic = languageNotifier.value;
+
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+
+      backgroundColor:
+          Theme.of(context).scaffoldBackgroundColor,
+
       appBar: AppBar(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+
+        backgroundColor:
+            Theme.of(context).scaffoldBackgroundColor,
+
         elevation: 0,
-        iconTheme: IconThemeData(color: Theme.of(context).textTheme.bodyLarge?.color),
+
+        iconTheme: IconThemeData(
+          color:
+              Theme.of(context)
+                  .textTheme
+                  .bodyLarge
+                  ?.color,
+        ),
+
         centerTitle: true,
-        title: Text(_getPageTitle(isArabic), style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontWeight: FontWeight.bold, fontSize: 18)),
+
+        title: Text(
+
+          _getPageTitle(isArabic),
+
+          style: TextStyle(
+
+            color:
+                Theme.of(context)
+                    .textTheme
+                    .bodyLarge
+                    ?.color,
+
+            fontWeight: FontWeight.bold,
+
+            fontSize: 18,
+          ),
+        ),
       ),
-      drawer: Sidebar(currentIndex: _currentIndex, onIndexChanged: (index) => setState(() => _currentIndex = index)),
+
+      drawer: Sidebar(
+        currentIndex: _currentIndex,
+        onIndexChanged: (index) {
+
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+      ),
+
       body: SafeArea(
-        child: _isLoading ? const Center(child: CircularProgressIndicator(color: AppColors.accentColor)) : _buildCurrentScreen(),
+
+        child: _isLoading
+
+          ? const Center(
+              child: CircularProgressIndicator(
+                color: AppColors.accentColor,
+              ),
+            )
+
+          : _buildCurrentScreen(),
       ),
     );
   }
