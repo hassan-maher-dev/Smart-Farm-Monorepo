@@ -135,10 +135,10 @@ pipeline {
     post {
         always {
             echo "🧹 Cleaning up workspace and local Docker images..."
-            // Cleaning up Jenkins server disk space.
+            // تنظيف مساحة سيرفر Jenkins
             sh "docker rmi ${DOCKERHUB_USER}/${AI_IMG}:${IMAGE_TAG} || true"
             sh "docker rmi ${DOCKERHUB_USER}/${IOT_IMG}:${IMAGE_TAG} || true"
-            cleanWs()
+            deleteDir() // Correction: we used the default command instead of cleanWs.
         }
         success {
             echo "✅ SUCCESS: Backend images pushed, Frontend deployed to S3, and GitOps updated!"
