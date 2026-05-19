@@ -69,11 +69,13 @@ pipeline {
         // ==========================================
         // STAGE 2: BUILD & DEPLOY FRONTEND (FLUTTER)
         // ==========================================
+        
         stage('Build Flutter Web') {
             // We use a prebuilt Docker image for Flutter so we don’t need to install it on the Jenkins server.
             agent {
                 docker {
-                    image 'ghcr.io/cirruslabs/flutter:3.24.0' // Use a version compatible with your code.
+                    // بدل 3.24.0 استخدم نسخة أحدث، أو استخدم latest لو متاح
+                    image 'ghcr.io/cirruslabs/flutter:3.27.0'    // Use a version compatible with your code.
                     reuseNode true
                 }
             }
