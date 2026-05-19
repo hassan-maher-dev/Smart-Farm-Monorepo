@@ -13,7 +13,7 @@ pipeline {
         S3_BUCKET_NAME = "my-eks-project-dev-frontend-bucket" // نفس الاسم اللي طلع في Outputs بتاعت Terraform
         
         // GitOps Repo
-        GITOPS_REPO = "github.com/hassan-maher-dev/Smart-Farm-GitOps.git"
+        GITOPS_REPO = "github.com/hassan-maher-dev/Smart-Farm-gitops.git"
         
         // Docker BuildKit (solves DooD issues)
         DOCKER_BUILDKIT = "0"
@@ -23,7 +23,7 @@ pipeline {
         stage('Checkout Code') {
             steps {
                 echo "📥 Checking out the main repository..."
-                // هنا Jenkins بيعمل Checkout للكود تلقائياً لو الـ Jenkinsfile ده موجود جوه الريبو
+                // Here, Jenkins automatically checks out the code if this Jenkinsfile exists inside the repository.
                 checkout scm
             }
         }
@@ -35,14 +35,14 @@ pipeline {
             steps {
                 echo "🐳 Building Docker images for AI and IoT services..."
                 
-                // الدخول لمجلد الباك إند وبناء الـ AI Service
+                // Entering the backend folder and building the AI service.
                 dir('Smart-Farm-Backend/ai_service') {
                     sh "docker build -t ${DOCKERHUB_USER}/${AI_IMG}:${IMAGE_TAG} ."
                     // تاج إضافي للـ latest
                     sh "docker tag ${DOCKERHUB_USER}/${AI_IMG}:${IMAGE_TAG} ${DOCKERHUB_USER}/${AI_IMG}:latest"
                 }
 
-                // الدخول لمجلد الباك إند وبناء الـ IoT Service
+                //Entering the backend folder and building the IoT service.
                 dir('Smart-Farm-Backend/iot_service') {
                     sh "docker build -t ${DOCKERHUB_USER}/${IOT_IMG}:${IMAGE_TAG} ."
                     sh "docker tag ${DOCKERHUB_USER}/${IOT_IMG}:${IMAGE_TAG} ${DOCKERHUB_USER}/${IOT_IMG}:latest"
@@ -53,7 +53,7 @@ pipeline {
         stage('Push to DockerHub') {
             steps {
                 echo "⬆️ Pushing images to DockerHub..."
-                // لازم تكون عامل Credentials في Jenkins باسم dockerhub-creds
+                // You must create credentials in Jenkins named dockerhub-creds
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]) {
                     sh "echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin"
                     
@@ -70,10 +70,10 @@ pipeline {
         // STAGE 2: BUILD & DEPLOY FRONTEND (FLUTTER)
         // ==========================================
         stage('Build Flutter Web') {
-            // بنستخدم Docker Image جاهزة للـ Flutter عشان مش نحتاج نسطبه على سيرفر Jenkins
+            // We use a prebuilt Docker image for Flutter so we don’t need to install it on the Jenkins server.
             agent {
                 docker {
-                    image 'ghcr.io/cirruslabs/flutter:3.24.0' // استخدم إصدار متوافق مع كودك
+                    image 'ghcr.io/cirruslabs/flutter:3.24.0' // Use a version compatible with your code.
                     reuseNode true
                 }
             }
@@ -91,14 +91,14 @@ pipeline {
         stage('Deploy Web to AWS S3') {
             steps {
                 echo "☁️ Uploading Flutter Web build to AWS S3..."
-                // لازم تكون عامل Credentials في Jenkins باسم aws-credentials-id (نوعها AWS Credentials)
+                // You must create credentials in Jenkins named aws-credentials-id (type: AWS Credentials).
                 withAWS(credentials: 'aws-credentials-id', region: "${AWS_REGION}") {
                     dir('Smart-Farm-Flutter/build/web') {
-                        // رفع الملفات للـ S3
+                        //Uploading the files to S3.
                         sh "aws s3 sync . s3://${S3_BUCKET_NAME} --delete"
                         
-                        // أمر إضافي لمسح الكاش من CloudFront لو معاك الـ Distribution ID (اختياري بس مستحسن جداً)
-                        // sh "aws cloudfront create-invalidation --distribution-id YOUR_DIST_ID --paths '/*'"
+                        // Additional command to clear the CloudFront cache if you have the Distribution ID (optional, but highly recommended).
+                        sh "aws cloudfront create-invalidation --distribution-id E3TQNYX5OJPZON --paths '/*'"
                     }
                 }
             }
@@ -113,7 +113,7 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'github-token', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
                     sh '''
                         git clone https://$GIT_USERNAME:$GIT_PASSWORD@${GITOPS_REPO}
-                        cd Smart-Farm-GitOps
+                        cd Smart-Farm-gitOps
                         
                         git config user.email "jenkins@devops.com"
                         git config user.name "Jenkins CI"
@@ -135,7 +135,7 @@ pipeline {
     post {
         always {
             echo "🧹 Cleaning up workspace and local Docker images..."
-            // تنظيف مساحة سيرفر Jenkins
+            // Cleaning up Jenkins server disk space.
             sh "docker rmi ${DOCKERHUB_USER}/${AI_IMG}:${IMAGE_TAG} || true"
             sh "docker rmi ${DOCKERHUB_USER}/${IOT_IMG}:${IMAGE_TAG} || true"
             cleanWs()
