@@ -74,8 +74,8 @@ pipeline {
             // We use a prebuilt Docker image for Flutter so we don’t need to install it on the Jenkins server.
             agent {
                 docker {
-                    // بدل 3.24.0 استخدم نسخة أحدث، أو استخدم latest لو متاح
-                    image 'ghcr.io/cirruslabs/flutter:3.27.0'    // Use a version compatible with your code.
+
+                    image 'ghcr.io/cirruslabs/flutter:3.29.0'    // Use a version compatible with your code.
                     reuseNode true
                 }
             }
