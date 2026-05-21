@@ -100,7 +100,7 @@ pipeline {
                         sh "aws s3 sync . s3://${S3_BUCKET_NAME} --delete"
                         
                         // Additional command to clear the CloudFront cache if you have the Distribution ID (optional, but highly recommended).
-                        sh "aws cloudfront create-invalidation --distribution-id E3TQNYX5OJPZON --paths '/*'"
+                        sh "aws cloudfront create-invalidation --distribution-id E14VO8WUHCH8MF --paths '/*'"
                     }
                 }
             }
