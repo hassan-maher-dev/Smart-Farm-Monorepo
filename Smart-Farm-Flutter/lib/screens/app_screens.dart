@@ -718,7 +718,7 @@ class ControlScreen extends StatelessWidget {
                 Switch(
                   value: isOn,
                   onChanged: (value) => onControlDevice(key, value, duration: duration),
-                  activeThumbColor: color,
+                  activeColor: color,
                   activeTrackColor: color.withOpacity(0.5),
                 ),
               ],
@@ -1061,7 +1061,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   title: Text(isArabic ? 'اللغة' : 'Language', style: TextStyle(color: textColor)),
                   subtitle: Text(isArabic ? 'العربية' : 'English', style: TextStyle(color: textColor?.withOpacity(0.6))),
                   value: isArabic,
-                  activeThumbColor: AppColors.accentColor,
+                  activeColor: AppColors.accentColor,
                   onChanged: (val) async {
                     languageNotifier.value = val;
                     final prefs = await SharedPreferences.getInstance();
@@ -1078,7 +1078,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       title: Text(isArabic ? 'الوضع الليلي' : 'Dark Mode', style: TextStyle(color: textColor)),
                       secondary: Icon(Icons.dark_mode, color: isDark ? Colors.purple : Colors.grey),
                       value: isDark,
-                      activeThumbColor: Colors.purple,
+                      activeColor: Colors.purple,
                       onChanged: (val) async {
                         themeNotifier.value = val ? ThemeMode.dark : ThemeMode.light;
                         final prefs = await SharedPreferences.getInstance();
