@@ -3,21 +3,21 @@ import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
-import 'package:supabase_flutter/supabase_flutter.dart'; // ✅ استدعاء Supabase
+// تم إزالة استدعاء مكتبة Supabase من هنا ✅
 
 class HistoryHelper {
   
-  // ✅ دالة ديناميكية بتجيب المفتاح بناءً على الـ ID بتاع الفلاح اللي مسجل دخول
-  static String get _userKey {
-    // هنجيب الـ ID من Supabase، لو مفيش حد مسجل (احتياطي) هنديها اسم default
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? 'guest_user';
+  // ✅ الدالة بقت async عشان بتجيب الـ user_id من SharedPreferences
+  static Future<String> get _userKey async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('user_id') ?? 'guest_user';
     return 'scan_history_$userId';
   }
 
   // 1. دالة حفظ نتيجة جديدة
   static Future<void> saveScan(File imageFile, String diseaseModelLabel, String confidence) async {
     final prefs = await SharedPreferences.getInstance();
-    
+
     // أ. حفظ الصورة في مكان دائم في التطبيق
     final directory = await getApplicationDocumentsDirectory();
     final String fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
@@ -34,8 +34,11 @@ class HistoryHelper {
       'date': DateFormat('yyyy-MM-dd – hh:mm a').format(DateTime.now()),
     };
 
-    // ج. جلب القائمة القديمة الخاصة بالمستخدم الحالي فقط ✅
-    String? oldData = prefs.getString(_userKey);
+    // ✅ التعديل هنا: بنستنى المفتاح الأول
+    String key = await _userKey; 
+    
+    // ج. جلب القائمة القديمة
+    String? oldData = prefs.getString(key);
     List<dynamic> historyList = oldData != null ? json.decode(oldData) : [];
 
     // د. إضافة الجديد في الأول
@@ -43,12 +46,11 @@ class HistoryHelper {
 
     // هـ. لو العدد زاد عن 20، امسح القديم
     if (historyList.length > 20) {
-      // محاولة مسح الصورة القديمة لتوفير المساحة
       try {
         var itemToRemove = historyList.last;
         File oldImage = File(itemToRemove['imagePath']);
         if (await oldImage.exists()) {
-          await oldImage.delete(); 
+          await oldImage.delete();
         }
       } catch (e) {
         print("Error deleting old image: $e");
@@ -56,15 +58,18 @@ class HistoryHelper {
       historyList.removeLast();
     }
 
-    // و. الحفظ النهائي في ملف المستخدم الحالي ✅
-    await prefs.setString(_userKey, json.encode(historyList));
+    // و. الحفظ النهائي باستخدام المفتاح الجديد ✅
+    await prefs.setString(key, json.encode(historyList));
   }
 
   // 2. دالة استرجاع السجل
   static Future<List<dynamic>> getHistory() async {
     final prefs = await SharedPreferences.getInstance();
-    // ✅ استرجاع الداتا بناءً على اليوزر الحالي
-    String? data = prefs.getString(_userKey); 
+    
+    // ✅ التعديل هنا: بنستنى المفتاح الأول
+    String key = await _userKey;
+    String? data = prefs.getString(key);
+    
     if (data == null) return [];
     return json.decode(data); // بيرجع List of Maps
   }
@@ -72,6 +77,7 @@ class HistoryHelper {
   // 3. مسح السجل بالكامل
   static Future<void> clearHistory() async {
     final prefs = await SharedPreferences.getInstance();
+    
     try {
       List<dynamic> list = await getHistory();
       for (var item in list) {
@@ -81,7 +87,9 @@ class HistoryHelper {
     } catch (e) {
       print("Error clearing history images: $e");
     }
-    // ✅ مسح سجل اليوزر الحالي فقط، وسيب سجلات الناس التانية
-    await prefs.remove(_userKey); 
+    
+    // ✅ التعديل هنا: بنستنى المفتاح عشان نمسح سجل اليوزر ده بس
+    String key = await _userKey;
+    await prefs.remove(key);
   }
 }

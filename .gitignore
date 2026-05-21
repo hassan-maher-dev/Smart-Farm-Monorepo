@@ -1,4 +1,48 @@
-# Project utility files
+# =========================
+# 1. Flutter & Dart
+# =========================
+**/build/
+**/.dart_tool/
+.packages
+.pub-cache/
+.pub/
+*.log
+*.jks
+*.keystore
+
+# =========================
+# 2. Python (Flask Backend)
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.venv/
+.env
+*.sqlite3
+
+# =========================
+# 3. Terraform & AWS
+# =========================
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+crash.log
+
+# =========================
+# 4. OS & IDEs
+# =========================
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# =========================
+# 5. Project Utilities
+# =========================
 tree.txt
 project_for_ai.txt
 export_project.ps1

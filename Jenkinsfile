@@ -115,7 +115,7 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'github-token', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
                     sh '''
                         git clone https://$GIT_USERNAME:$GIT_PASSWORD@${GITOPS_REPO}
-                        cd Smart-Farm-gitOps
+                        cd Smart-Farm-gitops
                         
                         git config user.email "jenkins@devops.com"
                         git config user.name "Jenkins CI"

@@ -7,7 +7,6 @@ import 'dart:io' show Platform;
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart'; 
-import 'package:supabase_flutter/supabase_flutter.dart'; // ✅ استدعاء Supabase لعزل السجل
 import 'package:plant_monitor/constants.dart';
 import 'package:plant_monitor/main.dart';
 import 'package:plant_monitor/data/diseases_data.dart';
@@ -30,8 +29,10 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
   final String _apiUrl = 'https://d1nhgyb1fjl6pc.cloudfront.net/predict';
 
   // ✅ دالة ديناميكية لإنشاء مفتاح خاص بكل فلاح في الويب
-  String get _userKey {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? 'guest_user';
+  // ✅ دالة ديناميكية لإنشاء مفتاح خاص بكل فلاح في الويب (بدون Supabase)
+  Future<String> get _userKey async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('user_id') ?? 'guest_user';
     return 'web_scan_history_$userId';
   }
 
@@ -41,11 +42,12 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
     _loadHistory();
   }
 
-  // --- دوال السجل للويب (تم العزل بنجاح ✅) ---
+  // --- دوال السجل للويب ---
   
   Future<void> _loadHistory() async {
     final prefs = await SharedPreferences.getInstance();
-    List<String> historyStrings = prefs.getStringList(_userKey) ?? []; // 👈 استخدام المفتاح الخاص
+    String key = await _userKey; // 👈 التعديل هنا
+    List<String> historyStrings = prefs.getStringList(key) ?? [];
     setState(() {
       _scanHistory = historyStrings.map((e) => json.decode(e) as Map<String, dynamic>).toList();
     });
@@ -53,29 +55,30 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
 
   Future<void> _saveToHistory(Disease disease, String confidence) async {
     final prefs = await SharedPreferences.getInstance();
-    List<String> historyStrings = prefs.getStringList(_userKey) ?? []; // 👈 استخدام المفتاح الخاص
+    String key = await _userKey; // 👈 التعديل هنا
+    List<String> historyStrings = prefs.getStringList(key) ?? []; 
 
     final formattedDate = DateFormat('yyyy-MM-dd hh:mm a').format(DateTime.now());
-
     Map<String, dynamic> newScan = {
       'diseaseLabel': disease.modelLabel, 
       'confidence': confidence,
       'date': formattedDate,
     };
-
     historyStrings.insert(0, json.encode(newScan));
 
     if (historyStrings.length > 20) {
-      historyStrings = historyStrings.sublist(0, 20); 
+      historyStrings = historyStrings.sublist(0, 20);
     }
 
-    await prefs.setStringList(_userKey, historyStrings); // 👈 الحفظ في ملف الفلاح الحالي فقط
-    _loadHistory(); 
+    await prefs.setStringList(key, historyStrings); 
+    _loadHistory();
   }
 
   Future<void> _clearHistory() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_userKey); // 👈 مسح سجل الفلاح الحالي فقط
+    String key = await _userKey; // 👈 التعديل هنا
+    await prefs.remove(key);
+    
     setState(() {
       _scanHistory = [];
     });
