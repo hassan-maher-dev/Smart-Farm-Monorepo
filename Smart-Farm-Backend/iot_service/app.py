@@ -484,19 +484,15 @@ def get_devices(user_id):
             .all()
         )
 
-        return jsonify([
+        device_map = {}
 
-            {
-
-                "id": d.id,
-
+        for d in devices:
+            device_map[d.id] = {
                 "is_on": d.is_on,
-
                 "mode": d.mode,
             }
 
-            for d in devices
-        ])
+        return jsonify(device_map), 200
 
     except Exception as e:
 
