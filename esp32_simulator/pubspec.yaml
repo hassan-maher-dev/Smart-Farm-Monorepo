@@ -1,0 +1,6 @@
+name: esp32_simulator
+description: IoT Simulator for Smart Farm
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+dependencies:
+  http: ^1.2.0

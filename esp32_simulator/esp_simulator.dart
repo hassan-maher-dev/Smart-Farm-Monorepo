@@ -4,10 +4,10 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 void main() async {
-  // 🔗 رابط سيرفر الـ AWS الخاص بك
-  const String serverBaseUrl = 'http://YOUR_AWS_EC2_IP:5002'; // عدل الرقم أو الدومين
+  // 🔗 رابط سيرفر الـ AWS Ingress الخاص بك مباشرة (بدون بورت 5002 لأن الانجرس يستقبل على بورت 80)
+  const String serverBaseUrl = 'http://a57f0c7a9303740ed945af4905efe5e8-1757069761.us-east-1.elb.amazonaws.com';
   
-  // 🔑 كود الفلاح
+  // 🔑 كود الفلاح الثابت المبرمج في الباك إند (Mock User)
   const userId = '17b7dec9-b349-4a51-bf03-edb57fbf7793';
   final random = Random();
 
@@ -22,7 +22,7 @@ void main() async {
   print('🚀 Starting FarmNet ESP32 Simulator (AWS Backend)...');
   print('⏳ Running identical logic to C++ code. Press Ctrl+C to stop.\n');
 
-  // دالة لتحديث حالة الأجهزة عن طريق الـ API (إذا لزم الأمر)
+  // دالة لتحديث حالة الأجهزة عن طريق الـ API
   Future<void> updateDeviceState(String deviceId, bool state) async {
     try {
       await http.post(
@@ -32,7 +32,7 @@ void main() async {
           'user_id': userId,
           'device_id': deviceId,
           'is_on': state,
-          'mode': 'auto' // لأن التغيير دا جي من الأتمتة
+          'mode': 'auto' // لأن التغيير دا جي من الأتمتة الداخلية للمتحكم
         })
       );
       print('🔄 Server Updated: $deviceId is now ${state ? "ON" : "OFF"}');
@@ -41,7 +41,7 @@ void main() async {
     }
   }
 
-  // اللوب الأولى: قراءة حالة الأجهزة من السيرفر (كل 2 ثانية)
+  // اللوب الأولى: قراءة حالة الأجهزة من السيرفر (كل 2 ثانية) لكي يستجيب السيميوليتور لأزرار الويب
   Timer.periodic(const Duration(seconds: 2), (timer) async {
     try {
       final response = await http.get(Uri.parse('$serverBaseUrl/api/devices/$userId'));
@@ -58,14 +58,14 @@ void main() async {
         }
       }
     } catch (e) {
-       // نتجاهل الأخطاء الصامتة 
+       // نتجاهل الأخطاء الصامتة في الشبكة
     }
   });
 
   // اللوب الثانية: قراءة الحساسات، الأتمتة، والرفع (كل 5 ثواني)
   Timer.periodic(const Duration(seconds: 5), (timer) async {
     
-    // محاكاة الحساسات 
+    // محاكاة الحساسات (تزيد الرطوبة إذا كانت المضخة تعمل، وتقل إذا توقفت)
     if (isPumpOn) {
       soilMoisture += 12.0; 
     } else {
@@ -83,14 +83,16 @@ void main() async {
     double soilEC = 1.0 + random.nextDouble() * 1.6;
     double uvIndex = (lightIntensity == 100.0) ? 5.0 + random.nextDouble() * 3.0 : 0.0;
 
-    // أتمتة المضخة
+    // أتمتة المضخة (Local Automation Logic)
     if (pumpMode == "auto") {
       if (soilMoisture < 30 && !isPumpOn) {
         isPumpOn = true;
         print('🤖 [AUTO] Soil dry (<30). Pump turned ON.');
+        await updateDeviceState('water_pump', true);
       } else if (soilMoisture >= 60 && isPumpOn) {
         isPumpOn = false;
         print('🤖 [AUTO] Soil wet (>=60). Pump turned OFF.');
+        await updateDeviceState('water_pump', false);
       }
     }
 
@@ -99,14 +101,16 @@ void main() async {
       if (lightIntensity == 0 && !isLightOn) {
         isLightOn = true;
         print('🤖 [AUTO] It is dark. Lights turned ON.');
+        await updateDeviceState('grow_lights', true);
       } else if (lightIntensity == 100 && isLightOn) {
         isLightOn = false;
         print('🤖 [AUTO] It is bright. Lights turned OFF.');
+        await updateDeviceState('grow_lights', false);
       }
     }
 
-    // رفع البيانات للسيرفر
-    final data = {
+    // تجهيز حزمة البيانات الذاهبة للسيرفر
+    final telemetryData = {
       'user_id': userId,
       'temperature': double.parse(temperature.toStringAsFixed(1)),
       'humidity': double.parse(humidity.toStringAsFixed(1)),
@@ -123,14 +127,16 @@ void main() async {
       final response = await http.post(
         Uri.parse('$serverBaseUrl/api/data'),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode(data)
+        body: json.encode(telemetryData)
       );
       
       final now = DateTime.now();
       final time = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
       
       if(response.statusCode == 201) {
-         print('✅ [$time] Sent -> Soil: ${data['soil_moisture']}% | Pump: $pumpMode (${isPumpOn ? "ON" : "OFF"}) | Light: $lightMode (${isLightOn ? "ON" : "OFF"})');
+         print('✅ [$time] Sent Data -> Soil: ${telemetryData['soil_moisture']}% | Temp: ${telemetryData['temperature']}°C | Pump: ${isPumpOn ? "ON" : "OFF"}');
+      } else {
+         print('⚠️ [$time] Failed to sync. Status: ${response.statusCode}');
       }
     } catch (e) {
       print('❌ Error sending data: $e');
