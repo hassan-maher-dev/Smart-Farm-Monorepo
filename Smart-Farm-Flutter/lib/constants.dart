@@ -35,7 +35,7 @@ class AppConfig {
 
   // Local Network Example
   static const String serverBaseUrl =
-      'http://192.168.1.5:5002';
+      'a57f0c7a9303740ed945af4905efe5e8-1757069761.us-east-1.elb.amazonaws.com';
 
   /*
     لو هتشغل على VPS:
