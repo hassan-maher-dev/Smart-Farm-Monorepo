@@ -17,4 +17,4 @@ COPY . .
 EXPOSE 5002
 
 # تشغيل التطبيق بسيرفر إنتاج قوي وإجباره على بورت 5002
-CMD ["gunicorn", "--bind", "0.0.0.0:5002", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5002", "--workers", "2", "--threads", "4", "--timeout", "120", "app:app"]
