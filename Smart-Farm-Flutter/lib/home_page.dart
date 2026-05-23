@@ -98,8 +98,8 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _loadHistoricalData() async {
     try {
-      final response = await http.get(
-          Uri.parse('${AppConfig.serverBaseUrl}/api/data/history/$_userId'));
+      final response = await http
+          .get(Uri.parse('${AppConfig.serverBaseUrl}/api/history/$_userId'));
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         if (mounted) {
