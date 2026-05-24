@@ -12,6 +12,25 @@
 </p>
 
 ---
+
+
+# 📌 Overview
+
+Smart Farm Infrastructure Platform is an end-to-end cloud-native agriculture system that combines:
+
+- 🌿 IoT automation
+- 🤖 AI plant disease detection
+- ☁️ Cloud infrastructure
+- 🚀 CI/CD & GitOps workflows
+- 📱 Cross-platform Flutter application
+
+The platform simulates a real smart farming environment where sensors continuously monitor environmental conditions and automatically control farm devices such as water pumps and grow lights.
+
+In addition, the system includes an AI-powered plant disease detection service using TensorFlow Lite models.
+
+---
+
+
 ```mermaid
 flowchart LR
     %% تخصيص الألوان والستايلات لتبدو احترافية
@@ -51,23 +70,15 @@ flowchart LR
     Flask -- "Reads/Writes Data\n(SQL Queries)" --> RDS
 ```
 
-# 📌 Overview
+## System Architecture-1
 
-Smart Farm Infrastructure Platform is an end-to-end cloud-native agriculture system that combines:
+The following diagram shows the overall architecture of the Smart Farm system, including the Flutter mobile/web clients, ESP32 IoT layer, AWS networking, EKS backend services, AI inference service, and PostgreSQL database.
 
-- 🌿 IoT automation
-- 🤖 AI plant disease detection
-- ☁️ Cloud infrastructure
-- 🚀 CI/CD & GitOps workflows
-- 📱 Cross-platform Flutter application
+<p align="center">
+  <img src="assets/smart-farm-architecture.png" alt="Smart Farm Project Architecture" width="100%">
+</p>
 
-The platform simulates a real smart farming environment where sensors continuously monitor environmental conditions and automatically control farm devices such as water pumps and grow lights.
-
-In addition, the system includes an AI-powered plant disease detection service using TensorFlow Lite models.
-
----
-
-# 🏗️ System Architecture
+# 🏗️ System Architecture-2
 
 ```text
                           ┌────────────────────┐
