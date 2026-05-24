@@ -12,7 +12,44 @@
 </p>
 
 ---
+```mermaid
+flowchart LR
+    %% تخصيص الألوان والستايلات لتبدو احترافية
+    classDef client fill:#02569B,stroke:#01579B,stroke-width:2px,color:white,font-weight:bold;
+    classDef aws_net fill:#FF9900,stroke:#232F3E,stroke-width:2px,color:black,font-weight:bold;
+    classDef k8s fill:#326CE5,stroke:#232F3E,stroke-width:2px,color:white,font-weight:bold;
+    classDef aws_db fill:#336791,stroke:#232F3E,stroke-width:2px,color:white,font-weight:bold;
+    classDef iot fill:#007A82,stroke:#004A50,stroke-width:2px,color:white,font-weight:bold;
 
+    %% تعريف المكونات الخارجية
+    subgraph Client_Layer ["📱 Client Layer"]
+        App["Flutter Mobile App\n(Smart Farm UI)"]:::client
+    end
+
+    subgraph IoT_Layer ["🌱 Edge / IoT Layer"]
+        ESP32["ESP32 Microcontroller\n(Sensors: Temp, Moisture, etc.)"]:::iot
+    end
+
+    %% تعريف البنية التحتية علي AWS
+    subgraph AWS_Cloud ["☁️ AWS Cloud Infrastructure"]
+        direction TB
+        
+        ELB["AWS Application\nLoad Balancer (ALB)"]:::aws_net
+        
+        subgraph EKS_Cluster ["Amazon EKS Cluster (Kubernetes)"]
+            Flask["Flask Backend API\n(Pods / Deployment)"]:::k8s
+        end
+        
+        RDS["Amazon RDS\n(PostgreSQL Database)"]:::aws_db
+    end
+
+    %% تعريف مسار البيانات
+    App -- "REST API (HTTP GET/POST)\nJSON" --> ELB
+    ESP32 -- "Sensor Telemetry\n(HTTP POST)" --> ELB
+    
+    ELB -- "Routes Traffic\n(Port 80/443)" --> Flask
+    Flask -- "Reads/Writes Data\n(SQL Queries)" --> RDS
+    
 # 📌 Overview
 
 Smart Farm Infrastructure Platform is an end-to-end cloud-native agriculture system that combines:
