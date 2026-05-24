@@ -49,7 +49,8 @@ flowchart LR
     
     ELB -- "Routes Traffic\n(Port 80/443)" --> Flask
     Flask -- "Reads/Writes Data\n(SQL Queries)" --> RDS
-    
+```
+
 # 📌 Overview
 
 Smart Farm Infrastructure Platform is an end-to-end cloud-native agriculture system that combines:
