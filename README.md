@@ -84,6 +84,10 @@ flowchart LR
     Flask -- "Reads/Writes Data\n(SQL Queries)" --> RDS
 ```
 
+## Related Repositories
+
+- Infrastructure as Code: https://github.com/hassan-maher-dev/Smart-Farm-Infrastructure.git
+- GitOps Manifests: https://github.com/hassan-maher-dev/Smart-Farm-gitops.git
 
 # 🏗️ System Architecture-2
 
