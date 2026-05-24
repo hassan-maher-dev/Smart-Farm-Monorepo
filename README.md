@@ -29,6 +29,20 @@ The platform simulates a real smart farming environment where sensors continuous
 In addition, the system includes an AI-powered plant disease detection service using TensorFlow Lite models.
 
 ---
+## Live Demonstration
+
+This section provides a recorded walkthrough of the deployed Smart Farm system. The demo highlights how the Flutter web dashboard, ESP32 IoT layer, Flask REST API, AI inference service, Amazon EKS, and Amazon RDS PostgreSQL work together as a complete cloud-based smart agriculture solution.
+
+Demo Video: https://drive.google.com/file/d/1lnkSRnr9dzXORdv0DpSQBex4F1X_J9kf/view?usp=sharing
+
+
+## System Architecture-1
+
+The following diagram shows the overall architecture of the Smart Farm system, including the Flutter mobile/web clients, ESP32 IoT layer, AWS networking, EKS backend services, AI inference service, and PostgreSQL database.
+
+<p align="center">
+  <img src="assets/smart-farm-architecture.png" alt="Smart Farm Project Architecture" width="100%">
+</p>
 
 
 ```mermaid
@@ -70,13 +84,6 @@ flowchart LR
     Flask -- "Reads/Writes Data\n(SQL Queries)" --> RDS
 ```
 
-## System Architecture-1
-
-The following diagram shows the overall architecture of the Smart Farm system, including the Flutter mobile/web clients, ESP32 IoT layer, AWS networking, EKS backend services, AI inference service, and PostgreSQL database.
-
-<p align="center">
-  <img src="assets/smart-farm-architecture.png" alt="Smart Farm Project Architecture" width="100%">
-</p>
 
 # 🏗️ System Architecture-2
 
