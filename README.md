@@ -12,41 +12,6 @@
 </p>
 
 ---
-flowchart LR
-    %% Custom Colors and Styles
-    classDef aws fill:#FF9900,stroke:#232F3E,stroke-width:2px,color:white,font-weight:bold;
-    classDef flutter fill:#02569B,stroke:#01579B,stroke-width:2px,color:white,font-weight:bold;
-    classDef db fill:#336791,stroke:#232F3E,stroke-width:2px,color:white,font-weight:bold;
-    classDef iot fill:#007A82,stroke:#004A50,stroke-width:2px,color:white,font-weight:bold;
-    classDef k8s fill:#326CE5,stroke:#232F3E,stroke-width:2px,color:white,font-weight:bold;
-
-    subgraph Client_Layer ["📱 Client Layer"]
-        App["Flutter Mobile App\n(Smart Farm UI)"]:::flutter
-    end
-
-    subgraph Edge_Layer ["🌱 Edge / IoT Layer"]
-        ESP32["ESP32 Microcontroller\n(Sensors: Temp, Moisture, etc.)"]:::iot
-    end
-
-    subgraph AWS_Cloud ["☁️ AWS Cloud Infrastructure"]
-        direction TB
-        ELB["AWS Application\nLoad Balancer (ALB/ELB)"]:::aws
-        
-        subgraph EKS_Cluster ["Amazon EKS (Kubernetes Cluster)"]
-            Flask["Flask Backend API\n(Deployment / Pods)"]:::k8s
-        end
-        
-        RDS["Amazon RDS\n(PostgreSQL Database)"]:::db
-    end
-
-    %% Flow Connections
-    App -- "REST API (HTTP GET/POST)\nJSON Payloads" --> ELB
-    ESP32 -- "Sensor Telemetry\n(HTTP POST)" --> ELB
-    ELB -- "Routes Traffic\n(Port 80/443)" --> Flask
-    Flask -- "Read/Write Data\n(SQL Queries)" --> RDS
-
-
-
 
 # 📌 Overview
 
