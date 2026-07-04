@@ -19,14 +19,14 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  String? _userId;
+  String? _authToken; // 🔑 التوكن المشفر
   Map<String, dynamic> _currentData = {};
   bool _isLoading = true;
   int _currentIndex = 0;
   DateTime _currentTime = DateTime.now();
 
   Timer? _clockTimer;
-  Timer? _pollingTimer; // Timer جديد لجلب البيانات من الـ API
+  Timer? _pollingTimer;
 
   Map<String, dynamic> _devicesState = {
     'water_pump': {'is_on': false, 'mode': 'auto'},
@@ -43,11 +43,11 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _initUserAndData() async {
     final prefs = await SharedPreferences.getInstance();
-    _userId = prefs.getString('user_id') ?? 'default_user';
-
+    // جلب التوكن المحفوظ بدلاً من الـ user_id
+    _authToken = prefs.getString('auth_token');
     await _initializeApp();
 
-    // بدء الـ Polling كل 5 ثواني لجلب البيانات الجديدة (كبديل للـ Realtime)
+    // بدء الـ Polling كل 5 ثواني لجلب البيانات الجديدة
     _pollingTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       _loadLatestData();
       _loadDevicesState();
@@ -67,6 +67,14 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  // =======================================================
+  // 🛡️ دالة ذكية لإضافة الـ JWT Token في Header كل طلب
+  // =======================================================
+  Map<String, String> get _authHeaders => {
+        'Content-Type': 'application/json',
+        if (_authToken != null) 'Authorization': 'Bearer $_authToken',
+      };
+
   Future<void> _initializeApp() async {
     try {
       await Future.wait(
@@ -80,15 +88,21 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _loadLatestData() async {
     try {
+      // ⚠️ تم إزالة الـ user_id من الرابط وإضافة التوكن بشكل آمن
       final response = await http.get(
-          Uri.parse('${AppConfig.serverBaseUrl}/api/latest-data/$_userId'));
+        Uri.parse('${AppConfig.serverBaseUrl}/api/latest-data'),
+        headers: _authHeaders,
+      );
+
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (mounted) {
-          setState(() {
-            _currentData = data;
-          });
-          _updateHistoricalList(data);
+        final resData = json.decode(response.body);
+        if (resData['status'] == 'success' && resData['data'] != null) {
+          if (mounted) {
+            setState(() {
+              _currentData = resData['data'];
+            });
+            _updateHistoricalList(resData['data']);
+          }
         }
       }
     } catch (e) {
@@ -98,14 +112,21 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _loadHistoricalData() async {
     try {
-      final response = await http
-          .get(Uri.parse('${AppConfig.serverBaseUrl}/api/history/$_userId'));
+      // ⚠️ تم إزالة الـ user_id من الرابط وإضافة التوكن بشكل آمن
+      final response = await http.get(
+        Uri.parse('${AppConfig.serverBaseUrl}/api/history'),
+        headers: _authHeaders,
+      );
+
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
-        if (mounted) {
-          setState(() {
-            _historicalData = List<Map<String, dynamic>>.from(data.reversed);
-          });
+        final resData = json.decode(response.body);
+        if (resData['status'] == 'success') {
+          final List<dynamic> data = resData['data'];
+          if (mounted) {
+            setState(() {
+              _historicalData = List<Map<String, dynamic>>.from(data.reversed);
+            });
+          }
         }
       }
     } catch (e) {
@@ -115,18 +136,26 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _loadDevicesState() async {
     try {
-      final response = await http
-          .get(Uri.parse('${AppConfig.serverBaseUrl}/api/devices/$_userId'));
+      // ⚠️ تم إزالة الـ user_id من الرابط وإضافة التوكن بشكل آمن
+      final response = await http.get(
+        Uri.parse('${AppConfig.serverBaseUrl}/api/devices'),
+        headers: _authHeaders,
+      );
+
       if (response.statusCode == 200) {
-        final data = json.decode(response.body) as Map<String, dynamic>;
-        if (mounted) {
-          setState(() {
-            // دمج البيانات المستلمة مع الـ state الحالي
-            if (data.containsKey('water_pump'))
-              _devicesState['water_pump'] = data['water_pump'];
-            if (data.containsKey('grow_lights'))
-              _devicesState['grow_lights'] = data['grow_lights'];
-          });
+        final resData = json.decode(response.body);
+        if (resData['status'] == 'success') {
+          final data = resData['devices'] as Map<String, dynamic>;
+          if (mounted) {
+            setState(() {
+              if (data.containsKey('water_pump')) {
+                _devicesState['water_pump'] = data['water_pump'];
+              }
+              if (data.containsKey('grow_lights')) {
+                _devicesState['grow_lights'] = data['grow_lights'];
+              }
+            });
+          }
         }
       }
     } catch (e) {
@@ -142,18 +171,16 @@ class _HomePageState extends State<HomePage> {
         _devicesState[deviceId]['mode'] = 'manual';
       }
     });
+
     try {
+      // ⚠️ إرسال device_id فقط دون الـ user_id (السيرفر سيستنتج المزرعة من التوكن)
       await http.post(
           Uri.parse('${AppConfig.serverBaseUrl}/api/devices/control'),
-          headers: {'Content-Type': 'application/json'},
-          body: json.encode({
-            'user_id': _userId,
-            'device_id': deviceId,
-            'is_on': newState,
-            'mode': 'manual'
-          }));
+          headers: _authHeaders,
+          body: json.encode(
+              {'device_id': deviceId, 'is_on': newState, 'mode': 'manual'}));
     } catch (e) {
-      _loadDevicesState(); // تراجع لو حصل مشكلة
+      _loadDevicesState(); // تراجع وعودة للحالة الفعلية لو حدث خطأ
     }
   }
 
@@ -163,12 +190,13 @@ class _HomePageState extends State<HomePage> {
         _devicesState[deviceId]['mode'] = 'auto';
       }
     });
+
     try {
+      // ⚠️ إرسال device_id والوضع فقط
       await http.post(
           Uri.parse('${AppConfig.serverBaseUrl}/api/devices/control'),
-          headers: {'Content-Type': 'application/json'},
-          body: json.encode(
-              {'user_id': _userId, 'device_id': deviceId, 'mode': 'auto'}));
+          headers: _authHeaders,
+          body: json.encode({'device_id': deviceId, 'mode': 'auto'}));
     } catch (e) {
       _loadDevicesState();
     }
@@ -176,11 +204,9 @@ class _HomePageState extends State<HomePage> {
 
   void _updateHistoricalList(Map<String, dynamic> newData) {
     if (!mounted) return;
-
-    // منع التكرار لو البيانات مفيش فيها جديد
+    // منع التكرار إذا لم يكن هناك تحديث
     if (_historicalData.isNotEmpty &&
         _historicalData.last['timestamp'] == newData['timestamp']) return;
-
     setState(() {
       _historicalData.add(newData);
       if (_historicalData.length > 2000) _historicalData.removeAt(0);

@@ -1,29 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../home_page.dart';
-import 'register_screen.dart'; // سنقوم بإنشائه في الخطوة القادمة
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({Key? key}) : super(key: key);
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _farmNameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
+
   bool _isLoading = false;
   bool _isPasswordVisible = false;
+  bool _isConfirmPasswordVisible = false;
 
   // يمكنك تغيير هذا الرابط حسب إعدادات الشبكة والسيرفر لديك
-  // 10.0.2.2 هو عنوان الـ localhost الافتراضي لمحاكي أندرويد (Android Emulator)
   final String _baseUrl = 'http://10.0.2.2:5000/api';
 
-  Future<void> _signIn() async {
+  Future<void> _signUp() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
@@ -32,40 +33,30 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('$_baseUrl/login'),
+        Uri.parse('$_baseUrl/register'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': _emailController.text.trim().toLowerCase(),
           'password': _passwordController.text,
+          'farm_name': _farmNameController.text.trim().isEmpty
+              ? 'مزرعتي الذكية'
+              : _farmNameController.text.trim(),
         }),
       );
 
       final responseData = jsonDecode(response.body);
 
-      if (response.statusCode == 200 && responseData['status'] == 'success') {
-        final String token = responseData['token'];
-        final String farmName =
-            responseData['user']['farm_name'] ?? 'مزرعتي الذكية';
-        final String email = responseData['user']['email'];
-        final String userId = responseData['user']['id'];
-
-        // حفظ البيانات بأمان في الـ SharedPreferences
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('auth_token', token);
-        await prefs.setString('user_email', email);
-        await prefs.setString('farm_name', farmName);
-        await prefs.setString('user_id', userId);
+      if (response.statusCode == 201 && responseData['status'] == 'success') {
+        _showSnackBar('تم تسجيل حساب المزرعة بنجاح! يمكنك الآن تسجيل الدخول',
+            isError: false);
 
         if (!mounted) return;
 
-        // الانتقال لشاشة لوحة التحكم الرئيسية وحذف شاشة تسجيل الدخول من سجل التنقل
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HomePage()),
-        );
+        // العودة لشاشة تسجيل الدخول بعد النجاح
+        Navigator.pop(context);
       } else {
         _showSnackBar(responseData['message'] ??
-            'خطأ في البريد الإلكتروني أو كلمة المرور');
+            'حدث خطأ أثناء التسجيل، يرجى المحاولة لاحقاً');
       }
     } catch (e) {
       _showSnackBar('تعذر الاتصال بالسيرفر، تأكد من تشغيل الباك إند والشبكة');
@@ -78,11 +69,11 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  void _showSnackBar(String message) {
+  void _showSnackBar(String message, {bool isError = true}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message, style: const TextStyle(fontFamily: 'Roboto')),
-        backgroundColor: Colors.redAccent,
+        backgroundColor: isError ? Colors.redAccent : Color(0xFF2E7D32),
       ),
     );
   }
@@ -91,40 +82,73 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              color: Color(0xFF2E7D32)),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
           child: Form(
             key: _formKey,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // شعار النظام / أيقونة المزرعة الذكية
                 const Icon(
-                  Icons.agriculture_rounded,
-                  size: 80,
+                  Icons.polyline_rounded,
+                  size: 60,
                   color: Color(0xFF4CAF50),
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  'Smart Farm Network',
+                  'تسجيل مزرعة جديدة',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 28,
+                    fontSize: 26,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF2E7D32),
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'نظام إدارة وتأمين المزارع المتعددة ذكياً',
+                  'قم بإنشاء حسابك لعزل وإدارة بيانات حساساتك وأجهزتك',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                  style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                 ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 35),
 
-                // حقل إدخال البريد الإلكتروني
+                // حقل اسم المزرعة
+                TextFormField(
+                  controller: _farmNameController,
+                  keyboardType: TextInputType.text,
+                  decoration: InputDecoration(
+                    labelText: 'اسم المزرعة (مثال: مزرعة النخيل)',
+                    prefixIcon: const Icon(Icons.gite_outlined,
+                        color: Color(0xFF4CAF50)),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide:
+                          const BorderSide(color: Color(0xFF4CAF50), width: 2),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'الرجاء إدخال اسم المزرعة تمييزاً لها';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                // حقل البريد الإلكتروني
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
@@ -151,9 +175,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
 
-                // حقل إدخال كلمة المرور
+                // حقل كلمة المرور
                 TextFormField(
                   controller: _passwordController,
                   obscureText: !_isPasswordVisible,
@@ -187,16 +211,58 @@ class _LoginScreenState extends State<LoginScreen> {
                       return 'الرجاء إدخال كلمة المرور';
                     }
                     if (value.length < 6) {
-                      return 'كلمة المرور يجب ألا تقل عن 6 أحرف';
+                      return 'كلمة المرور يجب ألا تقل عن 6 أحرف حمايةً للنظام';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                // حقل تأكيد كلمة المرور
+                TextFormField(
+                  controller: _confirmPasswordController,
+                  obscureText: !_isConfirmPasswordVisible,
+                  decoration: InputDecoration(
+                    labelText: 'تأكيد كلمة المرور',
+                    prefixIcon: const Icon(Icons.lock_clock_outlined,
+                        color: Color(0xFF4CAF50)),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _isConfirmPasswordVisible
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
+                        color: Colors.grey,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _isConfirmPasswordVisible =
+                              !_isConfirmPasswordVisible;
+                        });
+                      },
+                    ),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide:
+                          const BorderSide(color: Color(0xFF4CAF50), width: 2),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'الرجاء إعادة كتابة كلمة المرور لتأكيدها';
+                    }
+                    if (value != _passwordController.text) {
+                      return 'كلمتا المرور غير متطابقتين';
                     }
                     return null;
                   },
                 ),
                 const SizedBox(height: 30),
 
-                // زر تسجيل الدخول
+                // زر إنشاء الحساب
                 ElevatedButton(
-                  onPressed: _isLoading ? null : _signIn,
+                  onPressed: _isLoading ? null : _signUp,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF4CAF50),
                     padding: const EdgeInsets.symmetric(vertical: 16),
@@ -212,31 +278,25 @@ class _LoginScreenState extends State<LoginScreen> {
                               color: Colors.white, strokeWidth: 2),
                         )
                       : const Text(
-                          'تسجيل الدخول',
+                          'إنشاء الحساب وتفعيل المزرعة',
                           style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: Colors.white),
                         ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
 
-                // زر الانتقال لإنشاء حساب جديد للمزارع الجديدة
+                // العودة لشاشة الدخول لمن يملك حساب بالفعل
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('تمتلك مزرعة جديدة؟ ',
+                    Text('لديك حساب بالفعل؟ ',
                         style: TextStyle(color: Colors.grey[600])),
                     TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const RegisterScreen()),
-                        );
-                      },
+                      onPressed: () => Navigator.pop(context),
                       child: const Text(
-                        'أنشئ حسابك الآن',
+                        'سجل دخولك هنا',
                         style: TextStyle(
                             color: Color(0xFF2E7D32),
                             fontWeight: FontWeight.bold),
@@ -255,7 +315,9 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void dispose() {
     _emailController.dispose();
+    _farmNameController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 }
