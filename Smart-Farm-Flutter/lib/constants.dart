@@ -25,8 +25,7 @@ class AppConfig {
   */
 
   // Local Network Example
-  static const String serverBaseUrl =
-      'http://a2d4a3d953d914abfb16103309222981-1678866324.us-east-1.elb.amazonaws.com';
+  static const String serverBaseUrl = 'https://smartfarm.hassanmaher.tech';
 
   /*
     لو هتشغل على VPS:
