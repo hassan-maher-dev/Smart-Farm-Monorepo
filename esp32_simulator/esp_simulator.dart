@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 void main() async {
   // 🔗 رابط سيرفر الـ AWS Ingress الخاص بك مباشرة (بدون بورت 5002 لأن الانجرس يستقبل على بورت 80)
   const String serverBaseUrl =
-      'http://a57f0c7a9303740ed945af4905efe5e8-1757069761.us-east-1.elb.amazonaws.com';
+      'http://a36ddf1254f2d45dcb3610a47200c3c5-612110245.us-east-1.elb.amazonaws.com';
 
   // 🔑 كود الفلاح الثابت المبرمج في الباك إند (Mock User)
   const userId = '17b7dec9-b349-4a51-bf03-edb57fbf7793';
