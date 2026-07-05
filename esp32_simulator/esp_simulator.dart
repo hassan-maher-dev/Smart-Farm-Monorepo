@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 const String baseUrl = 'https://smartfarm.hassanmaher.tech/api';
 
 const String deviceEmail = 'hassan@gmail.com';
-const String devicePassword = '123456';
+const String devicePassword = 'hasan123';
 
 String? jwtToken;
 final Random random = Random();
