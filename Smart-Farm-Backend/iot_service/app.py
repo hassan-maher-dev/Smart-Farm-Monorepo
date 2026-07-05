@@ -274,5 +274,17 @@ def control_device():
     finally:
         db.close()
 
+# ===================================================
+# ============= HEALTH CHECK ENDPOINTS ==============
+# ===================================================
+@app.route('/', methods=['GET'])
+@app.route('/health', methods=['GET'])
+def health_check():
+    """مسار فحص الصحة لكي يطمئن Kubernetes أن السيرفر يعمل"""
+    return jsonify({
+        "status": "success", 
+        "message": "Smart Farm API is up and running!"
+    }), 200
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
