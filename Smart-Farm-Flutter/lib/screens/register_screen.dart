@@ -22,7 +22,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isConfirmPasswordVisible = false;
 
   // يمكنك تغيير هذا الرابط حسب إعدادات الشبكة والسيرفر لديك
-  final String _baseUrl = 'http://10.0.2.2:5000/api';
+  final String _baseUrl = 'https://smartfarm.hassanmaher.tech/api';
 
   Future<void> _signUp() async {
     if (!_formKey.currentState!.validate()) return;

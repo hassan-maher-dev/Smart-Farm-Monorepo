@@ -21,7 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // يمكنك تغيير هذا الرابط حسب إعدادات الشبكة والسيرفر لديك
   // 10.0.2.2 هو عنوان الـ localhost الافتراضي لمحاكي أندرويد (Android Emulator)
-  final String _baseUrl = 'http://10.0.2.2:5000/api';
+  final String _baseUrl = 'https://smartfarm.hassanmaher.tech/api';
 
   Future<void> _signIn() async {
     if (!_formKey.currentState!.validate()) return;
