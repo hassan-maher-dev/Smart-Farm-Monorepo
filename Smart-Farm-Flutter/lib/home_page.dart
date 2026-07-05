@@ -30,7 +30,8 @@ class _HomePageState extends State<HomePage> {
 
   Map<String, dynamic> _devicesState = {
     'water_pump': {'is_on': false, 'mode': 'auto'},
-    'grow_lights': {'is_on': false, 'mode': 'auto'}
+    // ✅ تم تغيير الاسم هنا من grow_lights إلى lighting
+    'lighting': {'is_on': false, 'mode': 'auto'}
   };
   List<Map<String, dynamic>> _historicalData = [];
 
@@ -151,8 +152,9 @@ class _HomePageState extends State<HomePage> {
               if (data.containsKey('water_pump')) {
                 _devicesState['water_pump'] = data['water_pump'];
               }
-              if (data.containsKey('grow_lights')) {
-                _devicesState['grow_lights'] = data['grow_lights'];
+              // ✅ تم تغيير الاسم هنا للبحث عن lighting
+              if (data.containsKey('lighting')) {
+                _devicesState['lighting'] = data['lighting'];
               }
             });
           }
@@ -173,7 +175,7 @@ class _HomePageState extends State<HomePage> {
     });
 
     try {
-      // ⚠️ إرسال device_id فقط دون الـ user_id (السيرفر سيستنتج المزرعة من التوكن)
+      // ⚠️ إرسال device_id فقط دون الـ user_id، ويجب تأكيد إرسال الـ mode: manual
       await http.post(
           Uri.parse('${AppConfig.serverBaseUrl}/api/devices/control'),
           headers: _authHeaders,
