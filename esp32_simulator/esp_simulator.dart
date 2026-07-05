@@ -3,30 +3,18 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:http/http.dart' as http;
 
-// ==========================================
-// ⚙️ إعدادات الاتصال بالسيرفر
-// ==========================================
-// ملاحظة: استخدم 127.0.0.1 إذا كنت تشغل المحاكي كـ Dart Script على الكمبيوتر
-// وإذا كنت تشغله على جهاز آخر، ضع IP السيرفر (مثل 192.168.1.5)
 const String baseUrl = 'https://smartfarm.hassanmaher.tech/api';
-// ==========================================
-// 🔐 بيانات اعتماد الهاردوير (Hardware Credentials)
-// ==========================================
-// يمكنك استخدام حسابك الذي سجلته في تطبيق الموبايل لترى القراءات هناك
+
 const String deviceEmail = 'hassan@gmail.com';
-const String devicePassword = '123456';
+const String devicePassword = 'hasan123';
 
 String? jwtToken;
 final Random random = Random();
 
-// ==========================================
-// 🛡️ دالة المصادقة والحصول على التوكن
-// ==========================================
 Future<bool> authenticateHardware() async {
-  print('⏳ جاري محاولة مصادقة جهاز ESP32 مع السيرفر...');
+  print('⏳ Authenticating ESP32 with the server...');
 
   try {
-    // 1. محاولة تسجيل الدخول
     var loginResponse = await http.post(
       Uri.parse('$baseUrl/login'),
       headers: {'Content-Type': 'application/json'},
@@ -39,42 +27,38 @@ Future<bool> authenticateHardware() async {
     if (loginResponse.statusCode == 200) {
       var data = jsonDecode(loginResponse.body);
       jwtToken = data['token'];
-      print('✅ تم تسجيل دخول الـ ESP32 بنجاح! (تم استلام JWT Token)');
+      print('✅ ESP32 authenticated successfully! (JWT Token received)');
       return true;
     } else if (loginResponse.statusCode == 401) {
-      // 2. إذا فشل الدخول (الحساب غير موجود)، نقوم بإنشائه تلقائياً
-      print('⚠️ الحساب غير موجود. جاري إنشاء حساب جديد للمزرعة تلقائياً...');
+      print(
+          '⚠️ Account not found. Creating a new farm account automatically...');
       var registerResponse = await http.post(
         Uri.parse('$baseUrl/register'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': deviceEmail,
           'password': devicePassword,
-          'farm_name': 'مزرعة المحاكي (ESP32 Simulator)'
+          'farm_name': 'ESP32 Simulator Farm'
         }),
       );
 
       if (registerResponse.statusCode == 201) {
-        print('✅ تم إنشاء الحساب بنجاح! جاري تسجيل الدخول...');
-        return await authenticateHardware(); // إعادة المحاولة بعد التسجيل
+        print('✅ Account created successfully! Logging in...');
+        return await authenticateHardware();
       } else {
-        print('❌ فشل إنشاء الحساب: ${registerResponse.body}');
+        print('❌ Failed to create account: ${registerResponse.body}');
         return false;
       }
     } else {
-      print('❌ خطأ غير متوقع: ${loginResponse.body}');
+      print('❌ Unexpected error: ${loginResponse.body}');
       return false;
     }
   } catch (e) {
-    print(
-        '❌ تعذر الاتصال بالسيرفر. يرجى التأكد من تشغيل الباك إند (Flask): $e');
+    print('❌ Connection failed. Ensure backend is running: $e');
     return false;
   }
 }
 
-// ==========================================
-// 📡 توليد بيانات الحساسات العشوائية
-// ==========================================
 double randomDouble(double min, double max) {
   return double.parse(
       (min + random.nextDouble() * (max - min)).toStringAsFixed(2));
@@ -94,25 +78,20 @@ Map<String, dynamic> generateMockTelemetry() {
   };
 }
 
-// ==========================================
-// 🚀 الدالة الرئيسية (نقطة انطلاق المحاكي)
-// ==========================================
 void main() async {
   print('================================================');
   print('🌱 Smart Farm ESP32 Simulator - Secure Edition 🔒');
   print('================================================\n');
 
-  // خطوة 1: الحصول على تصريح المرور (JWT)
   bool isAuthenticated = await authenticateHardware();
 
   if (!isAuthenticated || jwtToken == null) {
-    print('🚫 تم إيقاف المحاكي بسبب فشل المصادقة.');
+    print('🚫 Simulator stopped due to authentication failure.');
     return;
   }
 
-  print('\n📡 بدء بث قراءات الحساسات كل 5 ثوانٍ...\n');
+  print('\n📡 Starting sensor telemetry broadcast every 5 seconds...\n');
 
-  // خطوة 2: حلقة الإرسال الدورية (Polling)
   Timer.periodic(const Duration(seconds: 5), (timer) async {
     final telemetryData = generateMockTelemetry();
 
@@ -121,21 +100,20 @@ void main() async {
         Uri.parse('$baseUrl/data'),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $jwtToken', // 🔑 إرفاق التوكن هنا!
+          'Authorization': 'Bearer $jwtToken',
         },
         body: jsonEncode(telemetryData),
       );
 
       if (response.statusCode == 201) {
         print(
-            '📤 [نجاح] تم إرسال القراءات: درجة الحرارة = ${telemetryData['temperature']}°C');
+            '📤 [SUCCESS] Telemetry sent: Temp = ${telemetryData['temperature']}°C');
       } else {
         print(
-            '⚠️ [خطأ ${response.statusCode}] تم رفض البيانات: ${response.body}');
-        // إذا انتهت صلاحية التوكن، يمكن إضافة منطق هنا لإعادة تسجيل الدخول
+            '⚠️ [ERROR ${response.statusCode}] Data rejected: ${response.body}');
       }
     } catch (e) {
-      print('❌ [خطأ اتصال] لم يتم إرسال البيانات: $e');
+      print('❌ [CONNECTION ERROR] Failed to send data: $e');
     }
   });
 }
