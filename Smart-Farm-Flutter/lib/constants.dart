@@ -88,7 +88,7 @@ final List<Map<String, dynamic>> sensorsList = [
     'name': 'AIR QUALITY',
     'icon': Icons.air,
     'value_key': 'air_quality',
-    'unit': 'AQI',
+    'unit': '%',
     'color': const Color(0xFFFF9800),
     'description': 'Air Quality Index',
     'type': 'value',

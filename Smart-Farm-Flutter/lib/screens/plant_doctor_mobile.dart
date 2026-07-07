@@ -9,6 +9,7 @@ import 'package:plant_monitor/constants.dart';
 import 'package:plant_monitor/data/diseases_data.dart';
 import 'package:plant_monitor/main.dart';
 import 'package:plant_monitor/services/history_helper.dart'; // ملف السجل
+import 'package:image_cropper/image_cropper.dart'; // ✅ مكتبة القص
 
 class PlantDoctorScreen extends StatefulWidget {
   const PlantDoctorScreen({super.key});
@@ -117,20 +118,45 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
     }
   }
 
+  // ────────── التعديل هنا: دالة اختيار وقص الصورة ──────────
   Future<void> _pickImage(ImageSource source) async {
     try {
       final XFile? image = await _picker.pickImage(source: source);
       if (image != null) {
-        setState(() {
-          _selectedImage = File(image.path);
-        });
-        await Future.delayed(const Duration(milliseconds: 100));
-        await _runInference(_selectedImage!);
+        final isArabic = languageNotifier.value;
+        
+        // تفعيل نافذة القص
+        final croppedFile = await ImageCropper().cropImage(
+          sourcePath: image.path,
+          uiSettings: [
+            AndroidUiSettings(
+              toolbarTitle: isArabic ? 'قص الورقة المصابة' : 'Crop Infected Leaf',
+              toolbarColor: AppColors.accentColor,
+              toolbarWidgetColor: Colors.white,
+              initAspectRatio: CropAspectRatioPreset.original,
+              lockAspectRatio: false,
+            ),
+            IOSUiSettings(
+              title: isArabic ? 'قص الورقة المصابة' : 'Crop Infected Leaf',
+              cancelButtonTitle: isArabic ? 'إلغاء' : 'Cancel',
+              doneButtonTitle: isArabic ? 'تم' : 'Done',
+            ),
+          ],
+        );
+
+        if (croppedFile != null) {
+          setState(() {
+            _selectedImage = File(croppedFile.path); // الاعتماد على الصورة المقصوصة
+          });
+          await Future.delayed(const Duration(milliseconds: 100));
+          await _runInference(_selectedImage!);
+        }
       }
     } catch (e) {
-      print("Error picking image: $e");
+      print("Error picking/cropping image: $e");
     }
   }
+  // ─────────────────────────────────────────────────────────
 
   // --- دوال العرض (UI Functions) ---
 

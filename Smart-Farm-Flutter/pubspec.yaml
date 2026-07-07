@@ -17,6 +17,7 @@ dependencies:
 
   flutter:
     sdk: flutter
+    
 
   # ================= HTTP APIs =================
 
@@ -29,6 +30,7 @@ dependencies:
   # ================= AI / Images =================
 
   image_picker: ^1.0.4
+  image_cropper: ^12.2.1
 
   tflite_flutter: ^0.11.0
 
@@ -47,6 +49,7 @@ dependencies:
   intl: ^0.18.1
 
   share_plus: ^12.0.1
+  url_launcher: ^6.3.2
 
 # ===================================================
 # ================= DEV DEPENDENCIES ================
@@ -105,9 +108,9 @@ flutter_launcher_icons:
     image_path:
       "assets/icon/app_icon.png"
 
-    background_color: "#4CAF50"
+    background_color: "#ffffff"
 
-    theme_color: "#4CAF50"
+    theme_color: "#ffffff"
 
   # Windows
   windows:

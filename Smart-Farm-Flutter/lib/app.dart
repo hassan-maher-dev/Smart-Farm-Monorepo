@@ -18,7 +18,7 @@ class PlantMonitorApp extends StatelessWidget {
           valueListenable: themeNotifier,
           builder: (context, currentMode, child) {
             return MaterialApp(
-              title: 'Plant Monitor',
+              title: 'FarmNet',
               debugShowCheckedModeBanner: false,
               themeMode: currentMode,
               

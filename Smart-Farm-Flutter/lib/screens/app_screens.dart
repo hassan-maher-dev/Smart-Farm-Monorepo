@@ -6,6 +6,7 @@ import 'package:plant_monitor/constants.dart';
 import 'package:plant_monitor/widgets/common_widgets.dart';
 import 'package:plant_monitor/screens/login_screen.dart';
 import 'package:plant_monitor/main.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // -------------------- قاموس الترجمة (Translation Map) --------------------
 const Map<String, String> _sensorTitlesAr = {
@@ -933,220 +934,350 @@ class ControlScreen extends StatelessWidget {
 }
 
 // -------------------- 4. About Screen --------------------
+// -------------------- 4. About Screen (Modern Design) --------------------
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     final textColor = Theme.of(context).textTheme.bodyLarge?.color;
     final isArabic = languageNotifier.value;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBgColor = isDark ? const Color(0xFF1E2130) : Colors.white;
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 800),
-          child: Column(
-            children: [
-              const SizedBox(height: 10),
-              Container(
-                padding: const EdgeInsets.all(25),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1B2A26),
-                  borderRadius: BorderRadius.circular(25),
-                  boxShadow: [
-                    BoxShadow(
-                        color: AppColors.accentColor.withOpacity(0.3),
-                        blurRadius: 40,
-                        spreadRadius: 5),
-                  ],
-                ),
-                child: const Icon(Icons.eco,
-                    size: 70, color: AppColors.accentColor),
+
+    return CustomScrollView(
+      slivers: [
+        // ── Sliver Header التفاعلي ───────────────────────────
+        SliverAppBar(
+          automaticallyImplyLeading: false,
+          expandedHeight: 220.0,
+          floating: false,
+          pinned: true,
+          backgroundColor: AppColors.accentColor,
+          flexibleSpace: FlexibleSpaceBar(
+            centerTitle: true,
+            title: Text(
+              isArabic ? 'فارم نت' : 'FarmNet',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                shadows: [Shadow(color: Colors.black45, blurRadius: 10)],
               ),
-              const SizedBox(height: 16),
-              Text(
-                isArabic ? 'فارم نت' : 'FarmNet',
-                style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: textColor,
-                    letterSpacing: 1.0),
-              ),
-              const SizedBox(height: 25),
-              _buildSectionCard(
-                context,
-                title:
-                    isArabic ? 'ماذا نقدم في فارم نت؟' : 'What FarmNet Offers?',
-                cardBgColor: cardBgColor,
-                child: Text(
-                  isArabic
-                      ? 'نقدم حلولاً ذكية شاملة تدمج بين الـ IoT والذكاء الاصطناعي. يقوم نظامنا بمراقبة حيوية لظروف التربة والجو وتوفير تحكم ذكي عن بُعد في أنظمة الري والإضاءة، بالإضافة إلى استخدام تقنيات رؤية الكمبيوتر لتشخيص أمراض النباتات.'
-                      : 'We provide smart solutions merging IoT and AI. Our system delivers real-time monitoring of soil and environmental conditions with remote intelligent control, utilizing computer vision to diagnose plant diseases.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                      fontSize: 13,
-                      color: textColor?.withOpacity(0.8),
-                      height: 1.6),
-                ),
-              ),
-              _buildSectionCard(
-                context,
-                title: isArabic ? 'لجنة الإشراف' : 'Supervisors',
-                cardBgColor: cardBgColor,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: AppColors.accentColor.withOpacity(0.2),
-                      radius: 20,
-                      child: const Icon(Icons.school,
-                          color: AppColors.accentColor),
+            ),
+            background: Stack(
+              fit: StackFit.expand,
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.accentColor.withOpacity(0.8),
+                        const Color(0xFF1B2A26),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    const SizedBox(width: 12),
-                    Text(
-                      isArabic ? 'د. ريم حمادة' : 'Dr. Reem Hamada',
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: textColor),
-                    ),
-                  ],
-                ),
-              ),
-              _buildSectionCard(
-                context,
-                title: isArabic ? 'فريق العمل' : 'The Team',
-                cardBgColor: cardBgColor,
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  alignment: WrapAlignment.center,
-                  children: [
-                    _buildTeamMemberCard(
-                        context, 'Hazem Nasr', isDark, textColor),
-                    _buildTeamMemberCard(context,
-                        isArabic ? 'أحمد علي' : 'Ahmed Ali', isDark, textColor),
-                    _buildTeamMemberCard(
-                        context,
-                        isArabic ? 'سارة محمد' : 'Sara Mohamed',
-                        isDark,
-                        textColor),
-                    _buildTeamMemberCard(
-                        context,
-                        isArabic ? 'محمود حسن' : 'Mahmoud Hassan',
-                        isDark,
-                        textColor),
-                    _buildTeamMemberCard(
-                        context,
-                        isArabic ? 'ليلى إبراهيم' : 'Layla Ibrahim',
-                        isDark,
-                        textColor),
-                    _buildTeamMemberCard(
-                        context,
-                        isArabic ? 'ياسين أحمد' : 'Yassin Ahmed',
-                        isDark,
-                        textColor),
-                    _buildTeamMemberCard(
-                        context,
-                        isArabic ? 'نور سليم' : 'Nour Selim',
-                        isDark,
-                        textColor),
-                  ],
-                ),
-              ),
-              Align(
-                alignment:
-                    isArabic ? Alignment.centerRight : Alignment.centerLeft,
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 10, right: 8, left: 8),
-                  child: Text(
-                    isArabic ? 'المجالات التقنية' : 'Core Tech Domains',
-                    style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: textColor),
                   ),
                 ),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildTechCard(
-                      context,
-                      isArabic ? 'تطبيقات موبايل' : 'Mobile App',
-                      Icons.phone_android,
-                      Colors.blue,
-                      cardBgColor,
-                      textColor),
-                  _buildTechCard(context, 'IoT', Icons.settings_input_component,
-                      Colors.orange, cardBgColor, textColor),
-                  _buildTechCard(context, isArabic ? 'حوسبة سحابية' : 'Cloud',
-                      Icons.cloud_queue, Colors.green, cardBgColor, textColor),
-                  _buildTechCard(context, 'AI & ML', Icons.psychology,
-                      Colors.purple, cardBgColor, textColor),
-                ],
-              ),
-              const SizedBox(height: 30),
-            ],
+                const Center(
+                  child: Icon(Icons.eco, size: 90, color: Colors.white24),
+                ),
+              ],
+            ),
           ),
         ),
-      ),
+
+        // ── محتوى الصفحة ──────────────────────────────────────
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+            child: Column(
+              children: [
+                // ── الهوية الأكاديمية ──────────────────────────
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.accentColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.accentColor.withOpacity(0.3)),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        isArabic ? 'مشروع تخرج' : 'Graduation Project',
+                        style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.accentColor),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        isArabic
+                            ? 'جامعة الزقازيق - كلية الهندسة\nقسم هندسة الإلكترونيات والاتصالات (دفعة 2026)'
+                            : 'Zagazig University - Faculty of Engineering\nElectronics & Communications Engineering (Class of 2026)',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                            fontSize: 13,
+                            color: textColor,
+                            height: 1.5,
+                            fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // ── عن المشروع ───────────────────────────────
+                _buildSectionCard(
+                  context,
+                  title: isArabic ? 'نظرة عامة' : 'Overview',
+                  icon: Icons.info_outline,
+                  cardBgColor: cardBgColor,
+                  child: Text(
+                    isArabic
+                        ? 'فارم نت هو نظام زراعي ذكي متكامل يهدف إلى تحسين جودة المحاصيل، تقليل إهدار الموارد، وتسهيل إدارة المزارع عن بُعد. يعتمد النظام على بنية تحتية قوية تجمع بين حساسات إنترنت الأشياء (IoT) لجمع البيانات اللحظية، ونماذج التعلم الآلي (Machine Learning) لتحليلها وتوفير تحكم آلي دقيق في أنظمة الري والإضاءة.\n\nبالإضافة إلى ذلك، يدعم النظام التشخيص المبكر للأمراض النباتية باستخدام تقنيات الرؤية الحاسوبية (Computer Vision). ولضمان استقرار وتحديث النظام بكفاءة عالية، تم الاعتماد على ممارسات الـ DevOps لتأسيس خطوط تكامل وتوصيل مستمر (CI/CD)، مما يضمن نشر التحديثات وإدارة البنية التحتية السحابية بسلاسة وموثوقية.'
+                        : 'FarmNet is an integrated smart farming system designed to improve crop quality, minimize resource waste, and facilitate remote farm management. It relies on a robust infrastructure combining IoT sensors for real-time data collection and Machine Learning models for analysis, enabling precise automated control over irrigation and lighting.\n\nFurthermore, the system supports early plant disease diagnosis using Computer Vision. To ensure system stability and seamless updates, DevOps practices were heavily integrated, utilizing CI/CD pipelines for automated and reliable deployment to the cloud infrastructure.',
+                    textAlign: TextAlign.start,
+                    style: TextStyle(
+                        fontSize: 14,
+                        color: textColor?.withOpacity(0.8),
+                        height: 1.6),
+                  ),
+                ),
+
+                // ── التقنيات المستخدمة (Categories) ────────────
+                _buildSectionCard(
+                  context,
+                  title: isArabic ? 'مجالات العمل التقنية' : 'Core Technologies',
+                  icon: Icons.memory,
+                  cardBgColor: cardBgColor,
+                  child: Column(
+                    children: [
+                      _buildTechRow(context, 'Internet of Things (IoT)',
+                          isArabic ? 'إنترنت الأشياء لربط الحساسات والمتحكمات' : 'Connecting sensors and microcontrollers',
+                          Icons.wifi_tethering, Colors.teal, textColor),
+                      _buildTechRow(context, 'Machine Learning',
+                          isArabic ? 'التعلم الآلي وتحليل البيانات' : 'Data analysis and predictive modeling',
+                          Icons.psychology, Colors.purple, textColor),
+                      _buildTechRow(context, 'Computer Vision',
+                          isArabic ? 'الرؤية الحاسوبية لاكتشاف الأمراض' : 'Disease detection and classification',
+                          Icons.visibility, Colors.orange, textColor),
+                      _buildTechRow(context, 'DevOps & Cloud',
+                          isArabic ? 'إدارة السيرفرات والتكامل المستمر (CI/CD)' : 'Infrastructure, CI/CD, and Cloud Management',
+                          Icons.all_inclusive, Colors.redAccent, textColor),
+                      _buildTechRow(context, 'Mobile Development',
+                          isArabic ? 'تطبيقات الهواتف الذكية للتحكم والمراقبة' : 'Smart interfaces for monitoring and control',
+                          Icons.phone_android, Colors.blue, textColor),
+                    ],
+                  ),
+                ),
+
+                // ── الإشراف ──────────────────────────────────
+                _buildSectionCard(
+                  context,
+                  title: isArabic ? 'تحت إشراف' : 'Supervised By',
+                  icon: Icons.school_outlined,
+                  cardBgColor: cardBgColor,
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                            color: AppColors.accentColor.withOpacity(0.15),
+                            shape: BoxShape.circle),
+                        child: const Icon(Icons.person, color: AppColors.accentColor),
+                      ),
+                      const SizedBox(width: 16),
+                      Text(
+                        isArabic ? 'د. ريم حمادة' : 'Dr. Reem Hamada',
+                        style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: textColor),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // ── فريق العمل ────────────────────────────────
+                _buildSectionCard(
+                  context,
+                  title: isArabic ? 'فريق العمل (7 أعضاء)' : 'The Team (7 Members)',
+                  icon: Icons.groups_outlined,
+                  cardBgColor: cardBgColor,
+                  child: Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      _buildTeamMemberChip(context, 'Hazem Nasr', isDark, textColor),
+                      _buildTeamMemberChip(context, 'Hassan Maher', isDark, textColor),
+                      _buildTeamMemberChip(context, 'Osama Ashraf', isDark, textColor),
+                      _buildTeamMemberChip(context, 'Islam Ramadan', isDark, textColor),
+                      _buildTeamMemberChip(context, 'Abdullah Tarek', isDark, textColor),
+                      _buildTeamMemberChip(context, 'Khaled Mohamed', isDark, textColor),
+                      _buildTeamMemberChip(context, 'Ahmed Saeed', isDark, textColor),
+                    ],
+                  ),
+                ),
+
+                // ── رابط GitHub ─────────────────────────────────
+                _buildSectionCard(
+                  context,
+                  title: isArabic ? 'الكود المصدري' : 'Source Code',
+                  icon: Icons.code,
+                  cardBgColor: cardBgColor,
+                  child: Column(
+                    children: [
+                      Text(
+                        isArabic
+                            ? 'المشروع مفتوح المصدر ومتاح على GitHub'
+                            : 'The project is open source and available on GitHub',
+                        style: TextStyle(
+                            fontSize: 13, color: textColor?.withOpacity(0.7)),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () async {
+                          final Uri url = Uri.parse('https://github.com/hassan-maher-dev/Smart-Farm-Monorepo');
+                          // محاولة فتح الرابط في متصفح خارجي
+                          if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(isArabic ? 'حدث خطأ أثناء فتح الرابط' : 'Could not launch URL')),
+                            );
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? const Color(0xFF262A3D)
+                                : Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                                color: AppColors.accentColor.withOpacity(0.3)),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.link,
+                                  color: AppColors.accentColor, size: 20),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  'hassan-maher-dev/Smart-Farm-Monorepo',
+                                  style: const TextStyle(
+                                      fontSize: 13,
+                                      color: AppColors.accentColor,
+                                      fontWeight: FontWeight.w600,
+                                      decoration: TextDecoration.underline), // ضفت خط تحت النص عشان يبان إنه رابط
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // ── Version ──────────────────────────────────
+                const SizedBox(height: 20),
+                Text(
+                  'FarmNet v1.0.0',
+                  style: TextStyle(
+                      color: textColor?.withOpacity(0.4),
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2),
+                ),
+                const SizedBox(height: 40),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
+  // Helper Methods for Custom Design
   Widget _buildSectionCard(BuildContext context,
       {required String title,
+      required IconData icon,
       required Widget child,
       required Color cardBgColor}) {
     final textColor = Theme.of(context).textTheme.bodyLarge?.color;
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: cardBgColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 15,
+              offset: const Offset(0, 5))
+        ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title,
-              style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: textColor?.withOpacity(0.7))),
-          const SizedBox(height: 12),
+          Row(
+            children: [
+              Icon(icon, color: AppColors.accentColor, size: 22),
+              const SizedBox(width: 10),
+              Text(title,
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: textColor)),
+            ],
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Divider(height: 1),
+          ),
           child,
         ],
       ),
     );
   }
 
-  Widget _buildTeamMemberCard(
-      BuildContext context, String name, bool isDark, Color? textColor) {
-    return Container(
-      width: (MediaQuery.of(context).size.width - 60) / 2.1,
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF262A3D) : Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(12),
-      ),
+  Widget _buildTechRow(BuildContext context, String tech, String desc,
+      IconData icon, Color color, Color? textColor) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          CircleAvatar(
-            radius: 14,
-            backgroundColor: AppColors.accentColor.withOpacity(0.2),
-            child: const Icon(Icons.person,
-                size: 16, color: AppColors.accentColor),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 20),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 16),
           Expanded(
-            child: Text(
-              name,
-              style: TextStyle(
-                  fontSize: 12, fontWeight: FontWeight.w600, color: textColor),
-              overflow: TextOverflow.ellipsis,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(tech,
+                    style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: textColor)),
+                const SizedBox(height: 2),
+                Text(desc,
+                    style: TextStyle(
+                        fontSize: 11, color: textColor?.withOpacity(0.6))),
+              ],
             ),
           ),
         ],
@@ -1154,29 +1285,38 @@ class AboutScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTechCard(BuildContext context, String title, IconData icon,
-      Color iconColor, Color cardBgColor, Color? textColor) {
-    return Expanded(
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 4),
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-            color: cardBgColor, borderRadius: BorderRadius.circular(12)),
-        child: Column(
-          children: [
-            Icon(icon, color: iconColor, size: 24),
-            const SizedBox(height: 6),
-            Text(title,
-                style: TextStyle(
-                    fontSize: 9, color: textColor, fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center),
-          ],
-        ),
+  Widget _buildTeamMemberChip(
+      BuildContext context, String name, bool isDark, Color? textColor) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF262A3D) : Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.accentColor.withOpacity(0.15)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CircleAvatar(
+            radius: 12,
+            backgroundColor: AppColors.accentColor.withOpacity(0.1),
+            child: const Icon(Icons.person, size: 14, color: AppColors.accentColor),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            name,
+            style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: textColor),
+          ),
+        ],
       ),
     );
   }
 }
 
+// -------------------- 5. Settings Screen --------------------
 // -------------------- 5. Settings Screen --------------------
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -1186,10 +1326,13 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   final TextEditingController _nameController = TextEditingController();
+  bool _notificationsEnabled = true; // متغير لحالة التنبيهات
+
   @override
   void initState() {
     super.initState();
     _loadFarmName();
+    _loadNotificationSetting(); // تحميل حالة التنبيهات عند فتح الصفحة
   }
 
   Future<void> _loadFarmName() async {
@@ -1206,7 +1349,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await prefs.setString('farm_name', value);
   }
 
-  // ✅ تعديل دالة تسجيل الخروج الخاصة بـ SharedPreferences
+  // دالة لتحميل إعداد التنبيهات من الـ SharedPreferences
+  Future<void> _loadNotificationSetting() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
+      });
+    }
+  }
+
+  // دالة لتسجيل الخروج الخاصة بـ SharedPreferences
   Future<void> _logout() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -1298,6 +1451,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             color: Theme.of(context).cardColor,
             child: Column(
               children: [
+                // 1. إعداد اللغة
                 SwitchListTile(
                   title: Text(isArabic ? 'اللغة' : 'Language',
                       style: TextStyle(color: textColor)),
@@ -1313,6 +1467,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   },
                 ),
                 const Divider(height: 1),
+                
+                // 2. إعداد الوضع الليلي
                 ValueListenableBuilder<ThemeMode>(
                   valueListenable: themeNotifier,
                   builder: (context, currentMode, child) {
@@ -1333,36 +1489,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     );
                   },
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          _buildSectionHeader(isArabic ? 'المساعدة والدعم' : 'Help & Support',
-              textColor, isArabic),
-          Card(
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            color: Theme.of(context).cardColor,
-            child: Column(
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.headset_mic, color: Colors.orange),
-                  title: Text(
-                      isArabic ? 'كلم الدعم الفني' : 'Call Technical Support',
+                const Divider(height: 1),
+
+                // 3. إعداد تفعيل/تعطيل التنبيهات (الجديد)
+                SwitchListTile(
+                  title: Text(isArabic ? 'إشعارات النظام' : 'System Notifications',
                       style: TextStyle(color: textColor)),
-                  subtitle: const Text('+20 123 456 7890'),
-                  trailing: const Icon(Icons.phone, color: Colors.green),
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text(isArabic
-                            ? 'جاري الاتصال...'
-                            : 'Calling Support...')));
+                  subtitle: Text(
+                      isArabic 
+                          ? (_notificationsEnabled ? 'مفعلة' : 'معطلة') 
+                          : (_notificationsEnabled ? 'Enabled' : 'Disabled'),
+                      style: TextStyle(color: textColor?.withOpacity(0.6))),
+                  secondary: Icon(
+                    _notificationsEnabled ? Icons.notifications_active : Icons.notifications_off,
+                    color: _notificationsEnabled ? AppColors.accentColor : Colors.grey,
+                  ),
+                  value: _notificationsEnabled,
+                  activeColor: AppColors.accentColor,
+                  onChanged: (val) async {
+                    setState(() {
+                      _notificationsEnabled = val;
+                    });
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setBool('notifications_enabled', val);
                   },
                 ),
               ],
             ),
           ),
           const SizedBox(height: 40),
+          
+          // زرار تسجيل الخروج نزل مباشرة بعد كارت الإعدادات
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(

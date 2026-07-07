@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 import 'package:plant_monitor/constants.dart';
 import 'package:plant_monitor/main.dart';
 import 'package:plant_monitor/data/diseases_data.dart';
+import 'package:image_cropper/image_cropper.dart'; // ✅ إضافة مكتبة القص
 
 class PlantDoctorScreen extends StatefulWidget {
   const PlantDoctorScreen({super.key});
@@ -28,7 +29,6 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
 
   final String _apiUrl = '${AppConfig.serverBaseUrl}/predict';
 
-  // ✅ دالة ديناميكية لإنشاء مفتاح خاص بكل فلاح في الويب
   // ✅ دالة ديناميكية لإنشاء مفتاح خاص بكل فلاح في الويب (بدون Supabase)
   Future<String> get _userKey async {
     final prefs = await SharedPreferences.getInstance();
@@ -46,7 +46,7 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
 
   Future<void> _loadHistory() async {
     final prefs = await SharedPreferences.getInstance();
-    String key = await _userKey; // 👈 التعديل هنا
+    String key = await _userKey; 
     List<String> historyStrings = prefs.getStringList(key) ?? [];
     setState(() {
       _scanHistory = historyStrings
@@ -57,7 +57,7 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
 
   Future<void> _saveToHistory(Disease disease, String confidence) async {
     final prefs = await SharedPreferences.getInstance();
-    String key = await _userKey; // 👈 التعديل هنا
+    String key = await _userKey; 
     List<String> historyStrings = prefs.getStringList(key) ?? [];
 
     final formattedDate =
@@ -79,7 +79,7 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
 
   Future<void> _clearHistory() async {
     final prefs = await SharedPreferences.getInstance();
-    String key = await _userKey; // 👈 التعديل هنا
+    String key = await _userKey; 
     await prefs.remove(key);
 
     setState(() {
@@ -89,19 +89,50 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
 
   // ----------------------------------------
 
+  // ✅ دالة مخصصة لعرض نافذة القص في الويب
+  Future<CroppedFile?> _cropImageWeb(String imagePath) async {
+    final isArabic = languageNotifier.value;
+    
+    return await ImageCropper().cropImage(
+      sourcePath: imagePath,
+      compressFormat: ImageCompressFormat.jpg,
+      compressQuality: 90,
+      uiSettings: [
+        WebUiSettings(
+          context: context,
+          presentStyle: WebPresentStyle.dialog,
+          translations: WebTranslations(
+            title: isArabic ? 'قص الورقة المصابة فقط' : 'Crop only the infected leaf',
+            cropButton: isArabic ? 'تم' : 'Done',
+            cancelButton: isArabic ? 'إلغاء' : 'Cancel',
+            rotateLeftTooltip: isArabic ? 'تدوير لليسار' : 'Rotate left',
+            rotateRightTooltip: isArabic ? 'تدوير لليمين' : 'Rotate right',
+            // 👈 تم إزالة أسطر الـ zoom عشان الإصدار الجديد مش بيطلبهم
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ✅ تعديل دالة اختيار الصورة لتشمل القص قبل الرفع
   Future<void> _pickImage(ImageSource source) async {
     try {
       final XFile? image = await _picker.pickImage(source: source);
       if (image != null) {
-        final bytes = await image.readAsBytes();
-        setState(() {
-          _selectedImageBytes = bytes;
-          _selectedImageXFile = image;
-          _isAnalyzing = true;
-        });
+        // 👈 تشغيل القص
+        final croppedFile = await _cropImageWeb(image.path);
+        
+        if (croppedFile != null) {
+          final bytes = await croppedFile.readAsBytes();
+          setState(() {
+            _selectedImageBytes = bytes;
+            _selectedImageXFile = XFile(croppedFile.path);
+            _isAnalyzing = true;
+          });
 
-        await Future.delayed(const Duration(milliseconds: 100));
-        await _uploadAndAnalyze(bytes, image.name);
+          await Future.delayed(const Duration(milliseconds: 100));
+          await _uploadAndAnalyze(bytes, image.name); // نرفع الصورة المقصوصة
+        }
       }
     } catch (e) {
       print("Error picking image: $e");
@@ -382,7 +413,6 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
                     borderRadius: BorderRadius.circular(10))),
             const SizedBox(height: 20),
 
-            // ✅ تم تعديل عرض الصورة لـ BoxFit.contain مع خلفية أنيقة
             if (_selectedImageBytes != null)
               Container(
                 height: 200,
@@ -592,7 +622,7 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Text(isArabic ? "طبيب النبات (سحابي)" : "Plant Doctor (Cloud)",
+        title: Text(isArabic ? "طبيب النبات (سحابي)" : "Plant Doctor",
             style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
         actions: [
           IconButton(
