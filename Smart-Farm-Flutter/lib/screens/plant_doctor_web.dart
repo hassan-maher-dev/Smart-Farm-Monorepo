@@ -100,20 +100,18 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
       uiSettings: [
         WebUiSettings(
           context: context,
-          presentStyle: WebPresentStyle.dialog,
+          presentStyle: WebPresentStyle.page, // 👈 التعديل هنا: غيرناها لـ page
           translations: WebTranslations(
             title: isArabic ? 'قص الورقة المصابة فقط' : 'Crop only the infected leaf',
             cropButton: isArabic ? 'تم' : 'Done',
             cancelButton: isArabic ? 'إلغاء' : 'Cancel',
             rotateLeftTooltip: isArabic ? 'تدوير لليسار' : 'Rotate left',
             rotateRightTooltip: isArabic ? 'تدوير لليمين' : 'Rotate right',
-            // 👈 تم إزالة أسطر الـ zoom عشان الإصدار الجديد مش بيطلبهم
           ),
         ),
       ],
     );
   }
-
   // ✅ تعديل دالة اختيار الصورة لتشمل القص قبل الرفع
   Future<void> _pickImage(ImageSource source) async {
     try {
