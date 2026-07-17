@@ -586,21 +586,26 @@ class _SensorsScreenState extends State<SensorsScreen> {
                                 reservedSize: 60,
                                 interval: 1,
                                 getTitlesWidget: (value, meta) {
-                                  int index = value.toInt();
-                                  if (index >= 0 &&
-                                      index < rawChartData.length) {
-                                    String timeStr = '';
-                                    if (rawChartData[index]['timestamp'] !=
-                                        null) {
-                                      try {
-                                        DateTime dt = DateTime.parse(
-                                                rawChartData[index]
-                                                    ['timestamp'])
-                                            .toLocal();
-                                        timeStr =
-                                            DateFormat('hh:mm:ss').format(dt);
-                                      } catch (e) {}
-                                    }
+                                int index = value.toInt();
+                                if (index >= 0 && index < rawChartData.length) {
+                                  String timeStr = '';
+                                  if (rawChartData[index]['timestamp'] != null) {
+                                    try {
+                                      // --- بداية التعديل ---
+                                      String timeStrRaw = rawChartData[index]['timestamp'].toString();
+                                      
+                                      // بنعالج النص الأول عشان Flutter يفهم إنه توقيت عالمي UTC
+                                      if (!timeStrRaw.endsWith('Z')) {
+                                        timeStrRaw = timeStrRaw.replaceAll(' ', 'T') + 'Z';
+                                      }
+                                      
+                                      // دلوقتي لما نعمل toLocal هيزود الساعات بتاعة المنطقة الزمنية بتاعتك صح
+                                      DateTime dt = DateTime.parse(timeStrRaw).toLocal();
+                                      // --- نهاية التعديل ---
+                                      
+                                      timeStr = DateFormat('hh:mm:ss').format(dt);
+                                    } catch (e) {}
+                                   }
                                     return Padding(
                                       padding: const EdgeInsets.only(top: 8.0),
                                       child: RotatedBox(
@@ -722,7 +727,11 @@ class _SensorsScreenState extends State<SensorsScreen> {
     for (var d in widget.historicalData) {
       if (d['timestamp'] == null) continue;
       try {
-        DateTime dt = DateTime.parse(d['timestamp']).toLocal();
+                String timeStrRaw = d['timestamp'].toString();
+        if (!timeStrRaw.endsWith('Z')) {
+          timeStrRaw = timeStrRaw.replaceAll(' ', 'T') + 'Z';
+        }
+        DateTime dt = DateTime.parse(timeStrRaw).toLocal();
         if (dt.isAfter(todayStart)) {
           final val = (d[key] is num)
               ? d[key].toDouble()
@@ -1587,17 +1596,22 @@ class NotificationsScreen extends StatelessWidget {
 
     int lastTempState = 0;
     int lastMoistureState = 0;
+    int lastWaterLevelState = 0; 
 
     for (var record in historicalData) {
       final temp = (record['temperature'] is num) ? record['temperature'] : 0;
       final moisture =
           (record['soil_moisture'] is num) ? record['soil_moisture'] : 0;
+      final waterLevel = (record['water_level'] is num) ? record['water_level'] : 0;    
       String timeStr = '--:--';
 
       if (record['timestamp'] != null) {
         try {
-          DateTime parsedDate =
-              DateTime.parse(record['timestamp'].toString()).toLocal();
+          String timeStrRaw = record['timestamp'].toString();
+          if (!timeStrRaw.endsWith('Z')) {
+            timeStrRaw = timeStrRaw.replaceAll(' ', 'T') + 'Z';
+          }
+          DateTime parsedDate = DateTime.parse(timeStrRaw).toLocal();
           timeStr = DateFormat('hh:mm a').format(parsedDate);
         } catch (e) {
           timeStr = '--:--';
@@ -1648,6 +1662,24 @@ class NotificationsScreen extends StatelessWidget {
           });
         }
         lastMoistureState = currentMoistureState;
+      }
+      int currentWaterLevelState = 0;
+      if (waterLevel < 10) {
+        currentWaterLevelState = 1; // حالة الخطر
+      }
+
+      if (currentWaterLevelState != lastWaterLevelState) {
+        if (currentWaterLevelState == 1) {
+          alerts.add({
+            'type': 'error',
+            'title': isArabic ? 'مستوى المياه منخفض' : 'Low Water Level',
+            'message': isArabic
+                ? 'مستوى المياه في الخزان أقل من 10% ($waterLevel%)'
+                : 'Reservoir level is critically low ($waterLevel%)',
+            'time': timeStr
+          });
+        }
+        lastWaterLevelState = currentWaterLevelState;
       }
     }
 
