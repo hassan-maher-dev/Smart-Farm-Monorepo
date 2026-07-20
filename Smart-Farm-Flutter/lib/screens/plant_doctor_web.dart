@@ -46,7 +46,7 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
 
   Future<void> _loadHistory() async {
     final prefs = await SharedPreferences.getInstance();
-    String key = await _userKey; 
+    String key = await _userKey;
     List<String> historyStrings = prefs.getStringList(key) ?? [];
     setState(() {
       _scanHistory = historyStrings
@@ -57,7 +57,7 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
 
   Future<void> _saveToHistory(Disease disease, String confidence) async {
     final prefs = await SharedPreferences.getInstance();
-    String key = await _userKey; 
+    String key = await _userKey;
     List<String> historyStrings = prefs.getStringList(key) ?? [];
 
     final formattedDate =
@@ -79,7 +79,7 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
 
   Future<void> _clearHistory() async {
     final prefs = await SharedPreferences.getInstance();
-    String key = await _userKey; 
+    String key = await _userKey;
     await prefs.remove(key);
 
     setState(() {
@@ -92,7 +92,7 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
   // ✅ دالة مخصصة لعرض نافذة القص في الويب
   Future<CroppedFile?> _cropImageWeb(String imagePath) async {
     final isArabic = languageNotifier.value;
-    
+
     return await ImageCropper().cropImage(
       sourcePath: imagePath,
       compressFormat: ImageCompressFormat.jpg,
@@ -100,9 +100,12 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
       uiSettings: [
         WebUiSettings(
           context: context,
-          presentStyle: WebPresentStyle.page, // 👈 التعديل هنا: غيرناها لـ page
+          presentStyle:
+              WebPresentStyle.dialog, // 👈 التعديل هنا: غيرناها لـ page
           translations: WebTranslations(
-            title: isArabic ? 'قص الورقة المصابة فقط' : 'Crop only the infected leaf',
+            title: isArabic
+                ? 'قص الورقة المصابة فقط'
+                : 'Crop only the infected leaf',
             cropButton: isArabic ? 'تم' : 'Done',
             cancelButton: isArabic ? 'إلغاء' : 'Cancel',
             rotateLeftTooltip: isArabic ? 'تدوير لليسار' : 'Rotate left',
@@ -112,6 +115,7 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
       ],
     );
   }
+
   // ✅ تعديل دالة اختيار الصورة لتشمل القص قبل الرفع
   Future<void> _pickImage(ImageSource source) async {
     try {
@@ -119,7 +123,7 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
       if (image != null) {
         // 👈 تشغيل القص
         final croppedFile = await _cropImageWeb(image.path);
-        
+
         if (croppedFile != null) {
           final bytes = await croppedFile.readAsBytes();
           setState(() {
@@ -410,7 +414,6 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
                     color: Colors.grey[300],
                     borderRadius: BorderRadius.circular(10))),
             const SizedBox(height: 20),
-
             if (_selectedImageBytes != null)
               Container(
                 height: 200,
@@ -425,9 +428,7 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
                       Image.memory(_selectedImageBytes!, fit: BoxFit.contain),
                 ),
               ),
-
             const SizedBox(height: 20),
-
             Text(
               isArabic ? disease.nameAr : disease.name,
               style: TextStyle(
@@ -450,17 +451,13 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
                     color: AppColors.accentColor, fontWeight: FontWeight.bold),
               ),
             ),
-
             const SizedBox(height: 20),
-
             Text(
               isArabic ? disease.descriptionAr : disease.description,
               textAlign: TextAlign.center,
               style: const TextStyle(color: Colors.grey),
             ),
-
             const Spacer(),
-
             Row(
               children: [
                 Expanded(
